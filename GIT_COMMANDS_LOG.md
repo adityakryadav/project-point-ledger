@@ -183,3 +183,92 @@ git push origin master
 | **Partial staging** | Using `git add <path>` to stage specific files instead of everything |
 | **Multi-line commit messages** | Using line breaks in `-m` flag for detailed commit descriptions |
 | **`git log -n`** | Limiting log output to the most recent n commits |
+
+---
+
+## Day 3 — March 18, 2026 (Go Models + Feature Engineering)
+
+### 1. Check Current Status
+```bash
+git status
+```
+**What it does**: Shows which files have been added, modified, or deleted since the last commit. We expect to see new `.go` files, new `.py` file, modified `model_registry.py`, deleted `.gitkeep`, and updated log.
+
+### 2. Review What Changed
+```bash
+git diff --stat
+```
+**What it does**: Shows a summary of unstaged changes — file names and line counts. Useful to confirm you're about to stage the right things. Different from `git diff --cached --stat` which shows *staged* changes.
+
+### 3. Stage All Day 3 Changes
+```bash
+git add .
+```
+**What it does**: Stages all new, modified, and deleted files. Today this captures:
+- `ledger-accounting-service/models/journal_entry.go` (NEW)
+- `ledger-accounting-service/models/ledger_line.go` (NEW)
+- `intelligence-ml-service/core/feature_engineering.py` (NEW)
+- `intelligence-ml-service/models/model_registry.py` (MODIFIED)
+- `ledger-accounting-service/models/.gitkeep` (DELETED)
+- `GIT_COMMANDS_LOG.md` (MODIFIED)
+
+**Note on deleted files**: When a file is deleted from the working directory, `git add .` automatically stages the deletion. Git tracks this as a "delete" operation in the commit.
+
+### 4. Verify Staged Files
+```bash
+git status
+```
+**What it does**: Confirm the correct files are staged. Check for:
+- "new file" entries for the `.go` and `.py` files
+- "modified" for `model_registry.py` and this log
+- "deleted" for `.gitkeep`
+
+### 5. Review Staged Diff Summary
+```bash
+git diff --cached --stat
+```
+**What it does**: Shows a compact summary of staged changes. `--cached` means "show what's in the staging area vs last commit." Verify insertions/deletions match expectations.
+
+### 6. Commit Day 3 Work
+```bash
+git commit -m "feat: add Go models and ML feature engineering
+
+- Add journal_entry.go with JournalEntry struct, double-entry
+  validation (debit=credit), entry types, and repository interface
+- Add ledger_line.go with LedgerLine struct, account name constants,
+  debit/credit mutual exclusion, and exchange transaction line builder
+- Add feature_engineering.py with FraudFeatureTransformer (velocity
+  ratios, amount deviation, device risk) and PricingFeatureTransformer
+  (inventory, demand, time normalization)
+- Enhance model_registry.py with metadata tracking, file validation,
+  hot-swap reload support, and health status reporting
+- Remove models/.gitkeep (replaced by actual Go model files)
+- Update GIT_COMMANDS_LOG.md with Day 3 commands
+- Day 3: Phase 2 — Core Module Implementation"
+```
+**What it does**: Creates a commit capturing all Day 3 work. The message follows Conventional Commits (`feat:` prefix) with a detailed body listing each change.
+
+### 7. Verify Commit
+```bash
+git log --oneline -3
+```
+**What it does**: Shows the last 3 commits. Your Day 3 commit should appear at the top.
+
+### 8. Push to Remote
+```bash
+git push origin master
+```
+**What it does**: Uploads the new commit to GitHub. Since tracking was set up on Day 1, you could also just use `git push`.
+
+---
+
+## Git Concepts Used Today
+
+| Concept | Explanation |
+|---------|-------------|
+| **File deletion tracking** | `git add .` automatically stages deleted files — Git records the removal |
+| **`git diff --stat`** | Shows unstaged changes summary (vs `git diff --cached --stat` for staged) |
+| **Mixed operations** | A single commit can contain new files, modifications, AND deletions |
+| **`.gitkeep` lifecycle** | `.gitkeep` is a convention to track empty directories; remove it once real files exist |
+| **Conventional Commits** | `feat:` prefix indicates a new feature; body lists individual changes |
+
