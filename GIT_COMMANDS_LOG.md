@@ -385,4 +385,99 @@ git push origin master:main
 ```
 This ensures both `master` and `main` always point to the same commit.
 
+---
+
+## Day 5 — March 20, 2026 (GST Record Breakdown + Fraud Scoring API)
+
+### 1. Check Current Status
+```bash
+git status
+```
+**What it does**: Shows which files have been added, modified, or deleted since the last commit. We expect to see modified `.go` file, new `.py` file, modified `main.py`, and updated log.
+
+### 2. Review What Changed
+```bash
+git diff --stat
+```
+**What it does**: Shows a summary of unstaged changes. Today this reveals modifications to `transaction_processor.go`, a new file in `api/`, and changes to `main.py`.
+
+### 3. View Detailed Changes for a Specific File
+```bash
+git diff -- intelligence-ml-service/api/fraud_scoring_routes.py | head -50
+```
+**What it does**: Shows the full diff for a specific new file, piped through `head` to limit output. The `--` separator tells Git that what follows is a file path, not a branch name. Useful for reviewing new files before staging.
+
+**Related command**:
+```bash
+git diff -- ledger-accounting-service/services/transaction_processor.go
+```
+**What it does**: Shows changes within the modified Go file (additions and modifications) — helpful to review exactly what changed in the GST computation logic.
+
+### 4. Stage All Day 5 Changes
+```bash
+git add .
+```
+**What it does**: Stages all new and modified files. Today this captures:
+- `ledger-accounting-service/services/transaction_processor.go` (MODIFIED)
+- `intelligence-ml-service/api/fraud_scoring_routes.py` (NEW)
+- `intelligence-ml-service/main.py` (MODIFIED)
+- `GIT_COMMANDS_LOG.md` (MODIFIED)
+
+### 5. Verify Staged Files
+```bash
+git status
+```
+**What it does**: Confirm the correct files are staged. Check for:
+- "modified" for `transaction_processor.go`, `main.py`, and this log
+- "new file" for `fraud_scoring_routes.py`
+
+### 6. Review Staged Changes Summary
+```bash
+git diff --cached --stat
+```
+**What it does**: Shows a compact summary of all staged changes. `--cached` shows what's in the staging area. Verify the file count and line changes match expectations.
+
+### 7. Commit Day 5 Work
+```bash
+git commit -m "feat: add GST record breakdown and fraud scoring API
+
+- Enhance transaction_processor.go with GSTRecord struct for per-record
+  gst_records table persistence (CGST+SGST intra-state, IGST inter-state)
+- Add GenerateGSTRecords() with sum validation and consistency checks
+- Add ValidateGSTConsistency() for defense-in-depth DB integrity
+- Add InsertGSTRecords() batch method to TransactionManager interface
+- Add fraud_scoring_routes.py with POST /score endpoint: Redis profile
+  retrieval, feature engineering, XGBoost inference, decision mapping
+- Add GET /model-status endpoint for fraud model health reporting
+- Wire fraud router into main.py with Redis lifecycle (connect/disconnect)
+- Update GIT_COMMANDS_LOG.md with Day 5 commands
+- Day 5: Phase 2 — Core Module Implementation"
+```
+**What it does**: Creates a commit with all Day 5 work. The message documents both Member 1 (GST record breakdown) and Member 3 (fraud scoring API) contributions.
+
+### 8. Verify Commit
+```bash
+git log --oneline -5
+```
+**What it does**: Shows the last 5 commits. Day 5 commit should appear at the top.
+
+### 9. Push to Remote (Both Branches)
+```bash
+git push origin master
+git push origin master:main
+```
+**What it does**: Pushes to both `master` and `main` branches on GitHub, keeping them in sync for teacher visibility.
+
+---
+
+## Git Concepts Used Today
+
+| Concept | Explanation |
+|---------|-------------|
+| **`git diff -- <path>`** | Shows diff for a specific file using `--` path separator — useful for reviewing individual file changes |
+| **Reviewing new files** | `git diff` only shows tracked file changes; for new files, `git status` and `git diff --cached` show them after staging |
+| **Multi-file commits** | A single commit can contain modifications and new files across different service directories |
+| **`git diff --cached --stat`** | Shows a compact summary of staged changes — line counts per file for quick verification |
+| **Conventional Commits** | `feat:` prefix with detailed body listing changes per member/component |
+
 

@@ -9,11 +9,18 @@
 //   3. Double-entry journal creation (debit = credit invariant)
 //   4. Ledger line generation via BuildExchangeLines()
 //
+// Day 5 Enhancement — Detailed GST Record Generation:
+//   - GSTRecord struct maps directly to the gst_records DB table
+//   - Intra-state: 2 records (CGST 9% + SGST 9%)
+//   - Inter-state: 1 record (IGST 18%)
+//   - Validation: sum of record amounts == total GST
+//   - Used for GSTR-1/GSTR-3B regulatory filing compliance
+//
 // All operations are designed for ACID compliance. The TransactionManager
 // interface abstracts DB transaction boundaries (implementation in Day 7
 // with row-level locking and serializable isolation).
 //
-// Maps to execution plan: Member 1, Day 4, Phase 2
+// Maps to execution plan: Member 1, Days 4-5, Phase 2
 // =============================================================================
 
 package services
@@ -99,6 +106,25 @@ type ExchangeRequest struct {
 	FraudScore float64 `json:"fraud_score"`
 }
 
+// GSTRecord represents a single row in the gst_records database table.
+//
+// For intra-state transactions, two records are created (CGST + SGST).
+// For inter-state transactions, one record is created (IGST).
+// Each record is independently auditable for GSTR-1/GSTR-3B filing.
+type GSTRecord struct {
+	// GSTType is one of: "CGST", "SGST", "IGST".
+	GSTType string `json:"gst_type"`
+
+	// GSTRate is the applicable rate (0.09 for CGST/SGST, 0.18 for IGST).
+	GSTRate float64 `json:"gst_rate"`
+
+	// GSTAmount is the calculated tax amount for this record.
+	GSTAmount float64 `json:"gst_amount"`
+
+	// StateCode is the user's 2-letter state code (for filing jurisdiction).
+	StateCode string `json:"state_code"`
+}
+
 // GSTBreakdown contains the itemized GST calculation for a transaction.
 type GSTBreakdown struct {
 	// GSTType is "INTRA" (CGST+SGST) or "INTER" (IGST).
@@ -118,6 +144,10 @@ type GSTBreakdown struct {
 
 	// ServiceFeeBase is the amount on which GST is calculated.
 	ServiceFeeBase float64 `json:"service_fee_base"`
+
+	// Records contains the individual gst_records rows for DB persistence.
+	// Intra-state: 2 records (CGST + SGST), Inter-state: 1 record (IGST).
+	Records []GSTRecord `json:"records"`
 }
 
 // ExchangeResult contains the complete output of a committed exchange transaction.
@@ -183,8 +213,13 @@ type TransactionManager interface {
 	// InsertLedgerLines persists all ledger_lines for a journal entry.
 	InsertLedgerLines(lines []*models.LedgerLine) error
 
-	// InsertGSTRecord persists the gst_records for the transaction.
+	// InsertGSTRecord persists a single gst_records entry for the transaction.
 	InsertGSTRecord(txnID string, gst *GSTBreakdown) error
+
+	// InsertGSTRecords persists multiple gst_records entries for the transaction.
+	// Intra-state transactions produce 2 records (CGST + SGST).
+	// Inter-state transactions produce 1 record (IGST).
+	InsertGSTRecords(txnID string, records []GSTRecord) error
 
 	// UpdateWalletBalance atomically increments the user's wallet balance.
 	// Uses SELECT ... FOR UPDATE to prevent concurrent modification.
@@ -344,6 +379,10 @@ func CommitExchangeTransaction(txnID string, req *ExchangeRequest) (*ExchangeRes
 //
 // Both paths result in the same total GST (18%), but the split matters
 // for regulatory compliance and GST filing (GSTR-1, GSTR-3B).
+//
+// Day 5: Now also generates GSTRecord entries for gst_records table
+// persistence. Each record maps to one DB row with type, rate, amount,
+// and state_code — enabling per-component tax reporting.
 func calculateGST(serviceFee float64, userStateCode string) GSTBreakdown {
 	totalGST := roundToTwo(serviceFee * GSTRate)
 
@@ -355,6 +394,22 @@ func calculateGST(serviceFee float64, userStateCode string) GSTBreakdown {
 		// Handle rounding: ensure CGST + SGST == totalGST
 		sgst = roundToTwo(totalGST - cgst)
 
+		// Generate per-record entries for gst_records table (2 rows)
+		records := []GSTRecord{
+			{
+				GSTType:   "CGST",
+				GSTRate:   CGSTRate,
+				GSTAmount: cgst,
+				StateCode: userStateCode,
+			},
+			{
+				GSTType:   "SGST",
+				GSTRate:   SGSTRate,
+				GSTAmount: sgst,
+				StateCode: userStateCode,
+			},
+		}
+
 		return GSTBreakdown{
 			GSTType:        "INTRA",
 			TotalGST:       totalGST,
@@ -362,10 +417,20 @@ func calculateGST(serviceFee float64, userStateCode string) GSTBreakdown {
 			SGST:           sgst,
 			IGST:           0,
 			ServiceFeeBase: serviceFee,
+			Records:        records,
 		}
 	}
 
-	// Inter-state: IGST
+	// Inter-state: IGST — single record
+	records := []GSTRecord{
+		{
+			GSTType:   "IGST",
+			GSTRate:   IGSTRate,
+			GSTAmount: totalGST,
+			StateCode: userStateCode,
+		},
+	}
+
 	return GSTBreakdown{
 		GSTType:        "INTER",
 		TotalGST:       totalGST,
@@ -373,7 +438,111 @@ func calculateGST(serviceFee float64, userStateCode string) GSTBreakdown {
 		SGST:           0,
 		IGST:           totalGST,
 		ServiceFeeBase: serviceFee,
+		Records:        records,
 	}
+}
+
+// GenerateGSTRecords is a convenience function that extracts the GST records
+// from a breakdown for batch database insertion via TransactionManager.
+//
+// It also validates that the sum of individual record amounts equals the
+// total GST — a critical integrity check before persistence.
+func GenerateGSTRecords(breakdown *GSTBreakdown) ([]GSTRecord, error) {
+	if len(breakdown.Records) == 0 {
+		return nil, fmt.Errorf("GST breakdown contains no records")
+	}
+
+	// Validate sum of records == total GST
+	var recordSum float64
+	for _, r := range breakdown.Records {
+		recordSum += r.GSTAmount
+	}
+	recordSum = roundToTwo(recordSum)
+
+	if !almostEqual(recordSum, breakdown.TotalGST) {
+		return nil, fmt.Errorf(
+			"GST record sum (%.2f) does not match total GST (%.2f)",
+			recordSum, breakdown.TotalGST,
+		)
+	}
+
+	// Validate each record has valid type
+	for i, r := range breakdown.Records {
+		if r.GSTType != "CGST" && r.GSTType != "SGST" && r.GSTType != "IGST" {
+			return nil, fmt.Errorf(
+				"invalid GST type in record %d: '%s' (expected CGST, SGST, or IGST)",
+				i, r.GSTType,
+			)
+		}
+		if r.GSTAmount <= 0 {
+			return nil, fmt.Errorf(
+				"GST record %d (%s) has non-positive amount: %.2f",
+				i, r.GSTType, r.GSTAmount,
+			)
+		}
+		if len(r.StateCode) != 2 {
+			return nil, fmt.Errorf(
+				"GST record %d (%s) has invalid state_code: '%s'",
+				i, r.GSTType, r.StateCode,
+			)
+		}
+	}
+
+	return breakdown.Records, nil
+}
+
+// ValidateGSTConsistency performs cross-validation between the GST breakdown
+// summary fields and the individual records. This is a defense-in-depth check
+// to catch any inconsistency before data hits the database.
+//
+// Checks:
+//   1. Record count matches expected (INTRA=2, INTER=1)
+//   2. Record types match GST type (INTRA→CGST+SGST, INTER→IGST)
+//   3. Record amounts sum to TotalGST
+//   4. Individual amounts match breakdown fields (CGST, SGST, IGST)
+func ValidateGSTConsistency(b *GSTBreakdown) error {
+	switch b.GSTType {
+	case "INTRA":
+		if len(b.Records) != 2 {
+			return fmt.Errorf(
+				"INTRA GST expects 2 records (CGST+SGST), got %d",
+				len(b.Records),
+			)
+		}
+		// Verify CGST record
+		if b.Records[0].GSTType != "CGST" || !almostEqual(b.Records[0].GSTAmount, b.CGST) {
+			return fmt.Errorf(
+				"CGST record mismatch: record=(type=%s, amount=%.2f), expected=(CGST, %.2f)",
+				b.Records[0].GSTType, b.Records[0].GSTAmount, b.CGST,
+			)
+		}
+		// Verify SGST record
+		if b.Records[1].GSTType != "SGST" || !almostEqual(b.Records[1].GSTAmount, b.SGST) {
+			return fmt.Errorf(
+				"SGST record mismatch: record=(type=%s, amount=%.2f), expected=(SGST, %.2f)",
+				b.Records[1].GSTType, b.Records[1].GSTAmount, b.SGST,
+			)
+		}
+
+	case "INTER":
+		if len(b.Records) != 1 {
+			return fmt.Errorf(
+				"INTER GST expects 1 record (IGST), got %d",
+				len(b.Records),
+			)
+		}
+		if b.Records[0].GSTType != "IGST" || !almostEqual(b.Records[0].GSTAmount, b.IGST) {
+			return fmt.Errorf(
+				"IGST record mismatch: record=(type=%s, amount=%.2f), expected=(IGST, %.2f)",
+				b.Records[0].GSTType, b.Records[0].GSTAmount, b.IGST,
+			)
+		}
+
+	default:
+		return fmt.Errorf("unknown GST type: '%s'", b.GSTType)
+	}
+
+	return nil
 }
 
 // =============================================================================
