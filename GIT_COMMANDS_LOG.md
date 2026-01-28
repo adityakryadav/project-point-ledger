@@ -710,3 +710,112 @@ git push origin master:main
 | **`git diff -- <path>`**        | Shows diff for a specific file — useful for reviewing individual new files before staging             |
 | **Dual branch push**             | `git push origin master` + `git push origin master:main` keeps both branches synchronized             |
 
+---
+
+## Day 7 — March 22, 2026 (Concurrent Transactions + Dynamic Pricing API)
+
+> **Consistency from Day 6**: Continuing the practice of **two separate commits per day** to delineate Member 1 (Ledger) and Member 3 (ML) responsibilities.
+
+### Commit A — Member 1: Concurrent Transaction Safety
+
+#### A1. Stage Member 1's Files Selectively
+
+```bash
+git add ledger-accounting-service/services/concurrency_manager.go
+```
+
+**What it does**: Stages only the new concurrency manager implementation.
+
+#### A2. Verify Only Member 1's Files Are Staged
+
+```bash
+git status
+```
+
+**What it does**: Confirms that only `concurrency_manager.go` is staged under "Changes to be committed."
+
+#### A3. Commit Member 1's Work
+
+```bash
+git commit -m "feat(ledger): add concurrent transaction safety and row-level locking
+
+- Add concurrency_manager.go in Ledger Accounting Service
+- Implement SerializableTransactionManager fulfilling TransactionManager interface
+- Enforce SERIALIZABLE isolation level (preventing write skew and phantom reads)
+- Add SELECT ... FOR UPDATE row-level locking for wallet and partner points
+- Implement 3-attempt exponential backoff retry for transient serialization failures (40001)
+- Map database operations (journals, ledger lines, GST records) to safe prepared statements
+- Member 1, Day 7: Phase 2 — Core Module Implementation"
+```
+
+**What it does**: Commits Member 1's work with the `feat(ledger):` scope, detailing the ACID compliance and isolation achievements.
+
+---
+
+### Commit B — Member 3: Dynamic Pricing API
+
+#### B1. Stage Member 3's Files and Updated Log
+
+```bash
+git add intelligence-ml-service/api/dynamic_pricing_routes.py
+git add intelligence-ml-service/main.py
+git add GIT_COMMANDS_LOG.md
+```
+
+**What it does**: Stages Member 3's new API route, the main app wiring changes, and this updated Git log.
+
+#### B2. Verify Only Member 3's Files Are Staged
+
+```bash
+git status
+```
+
+**What it does**: Confirms the ML service routing changes and log are staged.
+
+#### B3. Commit Member 3's Work
+
+```bash
+git commit -m "feat(ml): add dynamic pricing API endpoint with DQN inference
+
+- Add dynamic_pricing_routes.py with POST /quote endpoint
+- Implement sub-100ms DQN inference pipeline using pre-trained model registry
+- Add time-bound quote generation (valid for 5 mins) and per-user cooldowns
+- Define PricingQuoteRequest and PricingQuoteResponse Pydantic models
+- Wire /api/v1/pricing router into main.py
+- Add GET /model-status health endpoint for the pricing agent
+- Update GIT_COMMANDS_LOG.md with Day 7 commands
+- Member 3, Day 7: Phase 2 — Core Module Implementation"
+```
+
+**What it does**: Commits Member 3's work alongside the updated documentation with the `feat(ml):` scope.
+
+---
+
+### Push Both Commits
+
+#### P1. Verify Both Commits
+
+```bash
+git log --oneline -9
+```
+
+**What it does**: Shows the last 9 commits, assuring the two new Day 7 commits sit cleanly atop the chronological history.
+
+#### P2. Push to Remote (Both Branches)
+
+```bash
+git push origin master
+git push origin master:main
+```
+
+**What it does**: Pushes both new commits to `master` and syncs to `main` for complete evaluator visibility.
+
+---
+
+## Git Concepts Used Today
+
+| Concept                          | Explanation                                                                                           |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| **Separation of Concerns (Git)** | Maintaining discrete commits for distinct logical architectural components (Ledger vs. ML)            |
+| **Multi-file staging**           | Passing multiple file paths to a single `git add` command for grouped functionality                   |
+| **Audit trail preservation**     | Keeping the log synchronized perfectly with the commit tree via `B1/B3` inclusion strategy            |
