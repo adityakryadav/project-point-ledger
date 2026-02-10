@@ -283,15 +283,26 @@ func (h *ExchangeHandler) HandleExchange(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	h.logger.Printf("Processing exchange: txn_id=%s, user=%s, partner=%s, points=%.2f, rate=%.4f, state=%s",
+	h.logger.Printf("Processing exchange: txn_id=%s, user=%s, partner=%s, points=%.2f, rate_requested=%.4f, state=%s",
 		txnID, httpReq.UserID, httpReq.SourcePartnerID,
 		httpReq.SourcePoints, httpReq.ExchangeRate,
 		httpReq.StateCode)
 
 	// =========================================================================
-	// Step 4.5: Call ML Service for Fraud Score
+	// Step 4.5: Fetch DQN Pricing Quote
 	// =========================================================================
-	amountINR := httpReq.SourcePoints * httpReq.ExchangeRate
+	exchangeRate, err := h.getPricingQuote(httpReq.UserID, httpReq.SourcePartnerID, httpReq.SourcePoints)
+	if err != nil {
+		h.logger.Printf("ERROR: DQN pricing failed, falling back to requested rate: %v", err)
+		exchangeRate = httpReq.ExchangeRate // fallback to requested rate
+	} else {
+		h.logger.Printf("DQN pricing retrieved: txn_id=%s, exchange_rate=%.4f", txnID, exchangeRate)
+	}
+
+	// =========================================================================
+	// Step 4.6: Call ML Service for Fraud Score
+	// =========================================================================
+	amountINR := httpReq.SourcePoints * exchangeRate
 	fraudScore, err := h.getFraudScore(httpReq.UserID, httpReq.DeviceHash, amountINR, httpReq.KYCStatus)
 	if err != nil {
 		h.logger.Printf("ERROR: Fraud scoring failed: %v", err)
@@ -309,7 +320,7 @@ func (h *ExchangeHandler) HandleExchange(w http.ResponseWriter, r *http.Request)
 		UserID:          httpReq.UserID,
 		SourcePartnerID: httpReq.SourcePartnerID,
 		SourcePoints:    httpReq.SourcePoints,
-		ExchangeRate:    httpReq.ExchangeRate,
+		ExchangeRate:    exchangeRate,
 		StateCode:       strings.ToUpper(httpReq.StateCode),
 		FraudScore:      fraudScore,
 	}
@@ -591,3 +602,58 @@ func (h *ExchangeHandler) getFraudScore(userID, deviceHash string, amount float6
 
 	return resPayload.FraudScore, nil
 }
+
+type pricingQuoteRequestJSON struct {
+	UserID                  string  `json:"user_id"`
+	PartnerID               string  `json:"partner_id"`
+	SourcePoints            float64 `json:"source_points"`
+	PartnerInventory        float64 `json:"partner_inventory"`
+	PartnerRedemptionRate   float64 `json:"partner_redemption_rate"`
+	UserExchangeFrequency   int     `json:"user_exchange_frequency"`
+	MarketDemandIndex       float64 `json:"market_demand_index"`
+}
+
+type pricingQuoteResponseJSON struct {
+	QuoteID         string  `json:"quote_id"`
+	ExchangeRate    float64 `json:"exchange_rate"`
+	PriceMultiplier float64 `json:"price_multiplier"`
+	BaseRate        float64 `json:"base_rate"`
+	ValidUntil      string  `json:"valid_until"`
+}
+
+func (h *ExchangeHandler) getPricingQuote(userID, partnerID string, points float64) (float64, error) {
+	reqPayload := pricingQuoteRequestJSON{
+		UserID:                  userID,
+		PartnerID:               partnerID,
+		SourcePoints:            points,
+		// Using mock values for market features not tracked in Ledger Service
+		PartnerInventory:        10000.0,
+		PartnerRedemptionRate:   0.85,
+		UserExchangeFrequency:   2,
+		MarketDemandIndex:       0.75,
+	}
+
+	reqBytes, err := json.Marshal(reqPayload)
+	if err != nil {
+		return 0, fmt.Errorf("marshal fail: %w", err)
+	}
+
+	client := &http.Client{Timeout: 200 * time.Millisecond}
+	resp, err := client.Post("http://localhost:8001/api/v1/pricing/quote", "application/json", bytes.NewReader(reqBytes))
+	if err != nil {
+		return 0, fmt.Errorf("post fail: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("non-200 status: %d", resp.StatusCode)
+	}
+
+	var resPayload pricingQuoteResponseJSON
+	if err := json.NewDecoder(resp.Body).Decode(&resPayload); err != nil {
+		return 0, fmt.Errorf("decode fail: %w", err)
+	}
+
+	return resPayload.ExchangeRate, nil
+}
+
