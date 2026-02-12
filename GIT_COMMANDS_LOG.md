@@ -999,3 +999,83 @@ git push origin master:main
 | Concept                          | Explanation                                                                                           |
 | -------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | **Separation of Concerns (Git)** | Maintaining discrete commits for distinct logical architectural components (Ledger vs. ML)            |
+
+---
+
+## Day 10 — March 25, 2026 (Integration: DQN Pricing & Drift Monitor)
+
+### Commit A — Ledger Accounting DQN Integration
+
+#### A1. Stage Ledger Service Files Selectively
+
+```bash
+git add ledger-accounting-service/handlers/exchange_handler.go
+```
+
+**What it does**: Stages the modified `exchange_handler.go` which now dynamically fetches the exchange rate from the ML service using the `/quote` endpoint.
+
+#### A2. Verify Only Ledger Files Are Staged
+
+```bash
+git status
+```
+
+**What it does**: Confirms that only `exchange_handler.go` is staged under "Changes to be committed."
+
+#### A3. Commit Ledger DQN Integration
+
+```bash
+git commit -m "feat(ledger): integrate DQN pricing rate into exchange transaction flow"
+```
+
+**What it does**: Commits the Ledger accounting work, maintaining the practice of two separate commits per day without mentioning member names.
+
+---
+
+### Commit B — ML KL Divergence Monitor
+
+#### B1. Stage ML Service Files Selectively
+
+```bash
+git add intelligence-ml-service/workers/kl_divergence_monitor.py
+git add GIT_COMMANDS_LOG.md
+```
+
+**What it does**: Stages the new `kl_divergence_monitor.py` drift detection worker and this updated Git log.
+
+#### B2. Verify Only Relevant Files Are Staged
+
+```bash
+git status
+```
+
+**What it does**: Confirms the ML service files and log are staged.
+
+#### B3. Commit ML Work
+
+```bash
+git commit -m "feat(ml): add kl divergence monitor for feature drift detection"
+```
+
+**What it does**: Commits the ML service worker implementation separately.
+
+---
+
+### Push Both Commits
+
+#### P1. Verify Both Commits
+
+```bash
+git log --oneline -2
+```
+
+**What it does**: Shows the last 2 commits to assure chronological history is intact.
+
+#### P2. Push to Remote (Both Branches)
+
+```bash
+git push origin master
+git push origin master:main
+```
+
+**What it does**: Syncs the local `master` with remote `master` and `main` branches.
