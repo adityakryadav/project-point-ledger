@@ -30,6 +30,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"sync"
 
 	"github.com/adityakryadav/project-point-ledger/ledger-accounting-service/models"
 )
@@ -74,7 +75,16 @@ var (
 	ErrTransactionBlocked    = errors.New("transaction blocked by fraud detection")
 	ErrDoubleEntryViolation  = errors.New("double-entry invariant violated during transaction assembly")
 	ErrPPILimitExceeded      = errors.New("PPI limit exceeded for wallet")
+	ErrDuplicateTransaction  = errors.New("transaction ID has already been processed")
 )
+
+// =============================================================================
+// Idempotency Cache (In-Memory Simulation)
+// =============================================================================
+
+// processedTxns acts as an in-memory cache to simulate DB-level duplicate key constraints
+// or Redis-based idempotency checks. It ensures exactly-once processing for a given TxnID.
+var processedTxns sync.Map
 
 // =============================================================================
 // Request / Response Structs
@@ -274,8 +284,18 @@ func CommitExchangeTransaction(txnID string, req *ExchangeRequest) (*ExchangeRes
 	// =========================================================================
 	// Step 1: Validate request
 	// =========================================================================
+	if txnID == "" {
+		return nil, errors.New("transaction ID is required")
+	}
 	if err := validateExchangeRequest(req); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
+	}
+
+	// =========================================================================
+	// Step 1.5: Enforce Idempotency (Exactly-Once Processing)
+	// =========================================================================
+	if _, loaded := processedTxns.LoadOrStore(txnID, true); loaded {
+		return nil, ErrDuplicateTransaction
 	}
 
 	// =========================================================================
