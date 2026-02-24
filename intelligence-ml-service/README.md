@@ -72,6 +72,40 @@ docker build -t ilpep-ml-service .
 docker run -p 8001:8001 ilpep-ml-service
 ```
 
+## Model Training
+
+```bash
+# Train XGBoost fraud classifier (generates models/xgboost_fraud_classifier_v1.pkl)
+python -m training.train_xgboost
+
+# Train DQN pricing agent (generates models/dqn_pricing_agent_v1.pt)
+python -m training.train_dqn --episodes 1000 --batch-size 32
+```
+
+## Running Tests
+
+```bash
+# Run all tests
+pytest tests/ -v
+
+# Run specific test suites
+pytest tests/live_integration_test.py -v     # E2E integration (pricing + fraud)
+pytest tests/retraining_pipeline_test.py -v  # KL divergence drift detection
+pytest tests/dqn_reward_test.py -v           # DQN reward function validation
+pytest tests/redis_feature_store_test.py -v  # Redis async operations
+pytest tests/inference_latency_test.py -v    # Latency SLA verification
+pytest tests/fraud_score_accuracy_test.py -v # Fraud model accuracy
+
+# Run Locust load test (requires service running on port 8001)
+locust -f tests/locustfile.py --host http://localhost:8001
+```
+
+## API Documentation
+
+When the service is running, interactive API docs are available at:
+- **Swagger UI**: `http://localhost:8001/docs`
+- **ReDoc**: `http://localhost:8001/redoc`
+
 ## Key Thresholds
 
 | Metric | Value |

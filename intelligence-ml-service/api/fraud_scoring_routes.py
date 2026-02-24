@@ -194,10 +194,10 @@ async def score_transaction(request: FraudScoreRequest) -> FraudScoreResponse:
     risk_profile_found = True
     try:
         raw_profile = await feature_store.get_risk_profile(request.user_id)
-    except RuntimeError:
-        # Redis not connected — use empty profile, log warning
+    except Exception:
+        # Redis not connected or any transient error — use empty profile, log warning
         logger.warning(
-            "Redis feature store not connected. Using default profile for user %s",
+            "Redis feature store not available. Using default profile for user %s",
             request.user_id,
         )
         raw_profile = None
