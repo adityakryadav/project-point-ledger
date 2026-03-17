@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
@@ -15,11 +16,12 @@ export default function LoginPage() {
     let isValid = true;
     const newErrors = { email: '', password: '' };
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email) {
       newErrors.email = 'Email is required';
       isValid = false;
-    } else if (!email.includes('@')) {
-      newErrors.email = 'Please enter a valid email address';
+    } else if (!emailRegex.test(email)) {
+      newErrors.email = 'Enter a valid email';
       isValid = false;
     }
 
@@ -35,17 +37,25 @@ export default function LoginPage() {
     return isValid;
   };
 
-  function onSubmit(e) {
+  async function onSubmit(e) {
     e.preventDefault();
     if (!validate()) return;
 
     setStatus({ loading: true, error: null });
 
-    // Mock auth request
-    window.setTimeout(() => {
-      login({ name: email.split('@')[0], email });
-      navigate('/dashboard');
-    }, 1200);
+    // Simulate API delay
+    await new Promise(res => setTimeout(res, 800));
+
+    // For demo: if email is 'error@example.com', simulate error
+    if (email === 'error@example.com') {
+      setStatus({ loading: false, error: 'Invalid email or password' });
+      toast.error('Invalid email or password');
+      return;
+    }
+    
+    login({ name: email.split('@')[0], email });
+    toast.success('Logged in successfully');
+    navigate('/dashboard');
   }
 
   return (

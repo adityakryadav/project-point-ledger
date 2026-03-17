@@ -14,35 +14,55 @@ export default function SignupPage() {
     confirmPassword: '',
   });
   const [status, setStatus] = useState({ loading: false, error: null });
+  const [errors, setErrors] = useState({ name: '', email: '', password: '', confirmPassword: '' });
 
   const handleChange = (e) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
+    if (errors[id]) setErrors((prev) => ({ ...prev, [id]: '' }));
   };
 
   const validate = () => {
-    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
-      return 'All fields are required.';
+    let isValid = true;
+    const newErrors = { name: '', email: '', password: '', confirmPassword: '' };
+
+    if (!formData.name) {
+      newErrors.name = 'Full name is required';
+      isValid = false;
     }
-    if (!formData.email.includes('@')) {
-      return 'Please enter a valid email address.';
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email) {
+      newErrors.email = 'Email is required';
+      isValid = false;
+    } else if (!emailRegex.test(formData.email)) {
+      newErrors.email = 'Enter a valid email';
+      isValid = false;
     }
-    if (formData.password.length < 6) {
-      return 'Password must be at least 6 characters.';
+
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+      isValid = false;
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+      isValid = false;
     }
-    if (formData.password !== formData.confirmPassword) {
-      return 'Passwords do not match.';
+
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Confirm password is required';
+      isValid = false;
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+      isValid = false;
     }
-    return null;
+
+    setErrors(newErrors);
+    return isValid;
   };
 
   const onSubmit = (e) => {
     e.preventDefault();
-    const error = validate();
-    if (error) {
-      setStatus({ loading: false, error });
-      return;
-    }
+    if (!validate()) return;
 
     setStatus({ loading: true, error: null });
 
@@ -118,8 +138,12 @@ export default function SignupPage() {
                     placeholder="John Doe"
                     value={formData.name}
                     onChange={handleChange}
-                    className="block w-full px-4 py-3 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:scale-[1.02] outline-none transition-all duration-200 text-gray-900 placeholder:text-gray-400"
+                    disabled={status.loading}
+                    className={`block w-full px-4 py-3 rounded-lg border ${
+                      errors.name ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-white'
+                    } focus:ring-2 focus:ring-indigo-500 focus:scale-[1.02] outline-none transition-all duration-200 text-gray-900 placeholder:text-gray-400`}
                   />
+                  {errors.name && <p className="text-red-500 text-xs mt-1.5 ml-1">{errors.name}</p>}
                 </div>
 
                 <div>
@@ -132,8 +156,12 @@ export default function SignupPage() {
                     placeholder="name@company.com"
                     value={formData.email}
                     onChange={handleChange}
-                    className="block w-full px-4 py-3 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:scale-[1.02] outline-none transition-all duration-200 text-gray-900 placeholder:text-gray-400"
+                    disabled={status.loading}
+                    className={`block w-full px-4 py-3 rounded-lg border ${
+                      errors.email ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-white'
+                    } focus:ring-2 focus:ring-indigo-500 focus:scale-[1.02] outline-none transition-all duration-200 text-gray-900 placeholder:text-gray-400`}
                   />
+                  {errors.email && <p className="text-red-500 text-xs mt-1.5 ml-1">{errors.email}</p>}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -147,8 +175,12 @@ export default function SignupPage() {
                       placeholder="••••••••"
                       value={formData.password}
                       onChange={handleChange}
-                      className="block w-full px-4 py-3 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:scale-[1.02] outline-none transition-all duration-200 text-gray-900 placeholder:text-gray-400"
+                      disabled={status.loading}
+                      className={`block w-full px-4 py-3 rounded-lg border ${
+                        errors.password ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-white'
+                      } focus:ring-2 focus:ring-indigo-500 focus:scale-[1.02] outline-none transition-all duration-200 text-gray-900 placeholder:text-gray-400`}
                     />
+                    {errors.password && <p className="text-red-500 text-xs mt-1.5 ml-1">{errors.password}</p>}
                   </div>
                   <div>
                     <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2 ml-1">
@@ -160,8 +192,12 @@ export default function SignupPage() {
                       placeholder="••••••••"
                       value={formData.confirmPassword}
                       onChange={handleChange}
-                      className="block w-full px-4 py-3 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:scale-[1.02] outline-none transition-all duration-200 text-gray-900 placeholder:text-gray-400"
+                      disabled={status.loading}
+                      className={`block w-full px-4 py-3 rounded-lg border ${
+                        errors.confirmPassword ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-white'
+                      } focus:ring-2 focus:ring-indigo-500 focus:scale-[1.02] outline-none transition-all duration-200 text-gray-900 placeholder:text-gray-400`}
                     />
+                    {errors.confirmPassword && <p className="text-red-500 text-xs mt-1.5 ml-1">{errors.confirmPassword}</p>}
                   </div>
                 </div>
               </div>
