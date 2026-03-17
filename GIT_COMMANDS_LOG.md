@@ -71,6 +71,26 @@ git log --oneline
 ```
 **What it does**: Shows a compact, one-line-per-commit view of the history. Useful to quickly verify your commit was recorded.
 
+### 8. Add Remote Repository
+```bash
+git remote add origin https://github.com/adityakryadav/project-point-ledger.git
+```
+**What it does**: Links your local repo to a remote repository on GitHub. `origin` is the conventional name for the primary remote. You only need to do this once per repo.
+
+**Useful variants**:
+- `git remote -v` → shows all configured remotes (fetch and push URLs)
+- `git remote remove origin` → removes a remote
+
+### 9. Push to Remote
+```bash
+git push -u origin master
+```
+**What it does**: Uploads your local `master` branch commits to the `origin` remote. The `-u` flag (short for `--set-upstream`) sets up tracking so that future `git push` and `git pull` commands know which remote branch to use by default.
+
+**After `-u` is set**, you can simply run:
+- `git push` → pushes to the tracked remote branch
+- `git pull` → pulls from the tracked remote branch
+
 ---
 
 ## Git Concepts Used Today
@@ -88,3 +108,78 @@ git log --oneline
 Working Directory  →  git add  →  Staging Area  →  git commit  →  Repository
      (edit)                        (review)                      (permanent)
 ```
+
+---
+
+## Day 2 — March 17, 2026 (Tax Compliance Triggers + Redis Feature Store)
+
+### 1. Check Current Status
+```bash
+git status
+```
+**What it does**: Shows which files have been added or modified since the last commit. We expect to see the new Day 2 files as untracked, and any modified files.
+
+### 2. Stage All Day 2 Changes
+```bash
+git add .
+```
+**What it does**: Stages ALL new and modified files. Since we added `002_tax_compliance.sql` and `redis_feature_store.py`, plus updated this log file, `git add .` captures everything.
+
+**Alternative — staging specific files**:
+```bash
+git add ledger-accounting-service/db/migrations/002_tax_compliance.sql
+git add intelligence-ml-service/core/redis_feature_store.py
+git add GIT_COMMANDS_LOG.md
+```
+**When to use this**: When you want fine-grained control over what goes into a commit. Useful when you have work-in-progress files you don't want to commit yet.
+
+### 3. Verify What's Staged
+```bash
+git status
+```
+**What it does**: Confirms the correct files are staged under "Changes to be committed."
+
+### 4. Review Staged Changes (Optional but Recommended)
+```bash
+git diff --cached --stat
+```
+**What it does**: Shows a summary of what's been staged — file names and how many lines were added/removed. `--cached` means "show staged changes" (as opposed to unstaged). `--stat` gives a compact summary instead of full diffs.
+
+### 5. Commit Day 2 Work
+```bash
+git commit -m "feat: add tax compliance triggers and Redis feature store
+
+- Add 002_tax_compliance.sql with PPI limit enforcement triggers,
+  audit log immutability rules, STR auto-flagging, wallet freeze
+  enforcement, ledger balance validation, and load reset functions
+- Add redis_feature_store.py with async CRUD operations for ML
+  risk profiles (get/set/update/delete, velocity increment, bulk
+  retrieval, feature vector extraction)
+- Update GIT_COMMANDS_LOG.md with Day 2 commands
+- Day 2: Phase 1 — Contract Definition & Data Layer"
+```
+**What it does**: Creates a commit with all staged changes. The multi-line message follows Conventional Commits format (`feat:` prefix for new features).
+
+### 6. Verify Commit
+```bash
+git log --oneline -3
+```
+**What it does**: Shows the last 3 commits in a compact format. The `-3` flag limits output to 3 entries. You should see your new Day 2 commit at the top.
+
+### 7. Push to Remote
+```bash
+git push origin master
+```
+**What it does**: Uploads the new commit to GitHub. Since we already set up tracking with `-u` on Day 1, `git push` alone would also work. Using `origin master` explicitly is clearer for learning purposes.
+
+---
+
+## Git Concepts Used Today
+
+| Concept | Explanation |
+|---------|-------------|
+| **`git diff --cached`** | Shows changes that are staged (in the index) vs the last commit |
+| **`--stat` flag** | Compact summary showing filenames and line change counts |
+| **Partial staging** | Using `git add <path>` to stage specific files instead of everything |
+| **Multi-line commit messages** | Using line breaks in `-m` flag for detailed commit descriptions |
+| **`git log -n`** | Limiting log output to the most recent n commits |
