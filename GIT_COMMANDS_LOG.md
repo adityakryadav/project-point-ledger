@@ -272,3 +272,117 @@ git push origin master
 | **`.gitkeep` lifecycle** | `.gitkeep` is a convention to track empty directories; remove it once real files exist |
 | **Conventional Commits** | `feat:` prefix indicates a new feature; body lists individual changes |
 
+---
+
+## Day 4 — March 19, 2026 (Transaction Processor + XGBoost Training)
+
+### 1. Check Current Status
+```bash
+git status
+```
+**What it does**: Shows which files have been added, modified, or deleted since the last commit. We expect to see new `.go` and `.py` files, a generated `.pkl` model, synthetic data CSV, and deleted `.gitkeep`.
+
+### 2. Review What Changed
+```bash
+git diff --stat
+```
+**What it does**: Shows a summary of unstaged changes. Today this reveals new files in `services/` and `training/`, plus the generated model artifact.
+
+### 3. Check What .gitignore Hides
+```bash
+git status --ignored
+```
+**What it does**: Shows files that are being ignored by `.gitignore` rules. The `--ignored` flag reveals hidden files. Today, the `.pkl` model file and synthetic CSV are gitignored (tracked separately from source code since they are generated artifacts).
+
+**Why this matters**: Understanding `.gitignore` interaction is important because:
+- Source code files (`.go`, `.py`) are tracked in Git
+- Generated artifacts (`.pkl` models, CSVs) are excluded to keep the repo lean
+- The training script can regenerate both the data and model at any time
+
+### 4. Stage All Day 4 Changes
+```bash
+git add .
+```
+**What it does**: Stages all new, modified, and deleted files. Git respects `.gitignore`, so excluded files (`.pkl`, `.csv`) are NOT staged. Today this captures:
+- `ledger-accounting-service/services/transaction_processor.go` (NEW)
+- `intelligence-ml-service/training/train_xgboost.py` (NEW)
+- `intelligence-ml-service/training/data/generate_synthetic_data.py` (NEW)
+- `ledger-accounting-service/services/.gitkeep` (DELETED)
+- `GIT_COMMANDS_LOG.md` (MODIFIED)
+
+### 5. Verify Staged Files
+```bash
+git status
+```
+**What it does**: Confirm only source code files are staged. Verify that `.pkl` and `.csv` are NOT listed (properly gitignored).
+
+### 6. View Specific File Details (Optional)
+```bash
+git diff --cached -- ledger-accounting-service/services/transaction_processor.go | head -20
+```
+**What it does**: Shows the staged diff for a specific file. The `--` separates git options from file paths. The `| head -20` pipes output to `head`, showing only the first 20 lines. Useful when you want to review a specific file's changes without seeing everything.
+
+**Variants**:
+- `git diff --cached -- *.go` → all staged Go files
+- `git diff --cached -- *.py` → all staged Python files
+- `git diff --cached --name-only` → just the filenames of staged changes
+
+### 7. Commit Day 4 Work
+```bash
+git commit -m "feat: add transaction processor and XGBoost training pipeline
+
+- Add transaction_processor.go with CommitExchangeTransaction() for
+  atomic double-entry exchanges: gross value, service fee (2%), GST
+  calculation (CGST/SGST vs IGST by state_code), net value to wallet
+- Add generate_synthetic_data.py with 4 fraud patterns: smurfing,
+  device farming, velocity abuse, load exploitation
+- Add train_xgboost.py with full training pipeline: data loading,
+  stratified split, XGBoost training, evaluation metrics, model
+  serialization to .pkl
+- Remove services/.gitkeep (replaced by actual Go service file)
+- Update GIT_COMMANDS_LOG.md with Day 4 commands
+- Day 4: Phase 2 — Core Module Implementation"
+```
+**What it does**: Creates a commit with all staged changes. The message documents both Member 1 (transaction processor) and Member 3 (ML training) contributions for the day.
+
+### 8. Verify Commit
+```bash
+git log --oneline -4
+```
+**What it does**: Shows the last 4 commits. Day 4 commit should appear at the top. The `-4` shows one more than before since we now have 4 days of commits.
+
+### 9. Push to Remote
+```bash
+git push origin master
+```
+**What it does**: Uploads the new commit to GitHub. Pushes only the tracked source code — generated artifacts stay local.
+
+---
+
+## Git Concepts Used Today
+
+| Concept | Explanation |
+|---------|-------------|
+| **`git status --ignored`** | Shows files hidden by `.gitignore` rules — useful to verify `.pkl` models aren't tracked |
+| **`git diff --cached -- <path>`** | View staged changes for a specific file using `--` path separator |
+| **`head` piping** | `| head -n` limits output to first n lines — useful for large diffs |
+| **`.gitignore` interaction** | `git add .` respects `.gitignore` — excluded files are never staged |
+| **Generated vs source artifacts** | Source code (`.go`, `.py`) is tracked; generated files (`.pkl`, `.csv`) are gitignored |
+| **`--name-only` flag** | Shows just filenames in diff output, omitting actual content changes |
+
+### 10. Sync Master to Main Branch
+```bash
+git push origin master:main
+```
+**What it does**: Pushes the local `master` branch to the remote `main` branch. The `master:main` syntax means "take local `master` and push it to remote `main`." This ensures both branches have identical commit history.
+
+**Why we need this**: The GitHub repo was originally created with `main` as the default branch. Our development happens on `master`. To keep both branches in sync (for teacher visibility), we push to both.
+
+**From Day 5 onwards**, every push session will use:
+```bash
+git push origin master
+git push origin master:main
+```
+This ensures both `master` and `main` always point to the same commit.
+
+
