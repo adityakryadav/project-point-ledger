@@ -4,7 +4,8 @@ ILPEP Intelligence ML Service — FastAPI Application Entry Point
 Provides:
 - Health check endpoint
 - Startup lifecycle: loads ML models, connects Redis
-- Router mounting for fraud scoring and dynamic pricing (added in Phase 2)
+- Fraud scoring route (POST /api/v1/fraud/score) — Day 5
+- Router mounting for dynamic pricing (added in Phase 2)
 """
 
 import logging
@@ -20,7 +21,9 @@ from core.config import (
     DQN_MODEL_PATH,
     DQN_MODEL_VERSION,
 )
+from core.redis_feature_store import feature_store
 from models.model_registry import registry
+from api.fraud_scoring_routes import router as fraud_router
 
 # Configure logging
 logging.basicConfig(
@@ -57,11 +60,26 @@ async def lifespan(app: FastAPI):
             "No models loaded. Train models first, then restart the service."
         )
     
+    # Connect to Redis feature store for fraud scoring
+    try:
+        await feature_store.connect()
+        logger.info("Redis feature store connected")
+    except Exception as e:
+        logger.warning(
+            "Redis feature store connection failed: %s. "
+            "Fraud scoring will use default profiles.", e
+        )
+    
     logger.info(f"{SERVICE_NAME} started successfully")
     yield
     
     # Shutdown
     logger.info(f"Shutting down {SERVICE_NAME}...")
+    try:
+        await feature_store.disconnect()
+        logger.info("Redis feature store disconnected")
+    except Exception:
+        pass
 
 
 # ==============================================================================
@@ -116,9 +134,11 @@ async def root():
 
 
 # ==============================================================================
-# Route Registration (to be added in Phase 2)
+# Route Registration
 # ==============================================================================
-# from api.fraud_scoring_routes import router as fraud_router
+# Day 5: Fraud scoring routes (POST /score, GET /model-status)
+app.include_router(fraud_router, prefix=f"/api/{API_VERSION}/fraud")
+
+# Day 7: Dynamic pricing routes (to be added)
 # from api.dynamic_pricing_routes import router as pricing_router
-# app.include_router(fraud_router, prefix=f"/api/{API_VERSION}/fraud")
 # app.include_router(pricing_router, prefix=f"/api/{API_VERSION}/pricing")
