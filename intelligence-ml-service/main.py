@@ -139,6 +139,6 @@ async def root():
 # Day 5: Fraud scoring routes (POST /score, GET /model-status)
 app.include_router(fraud_router, prefix=f"/api/{API_VERSION}/fraud")
 
-# Day 7: Dynamic pricing routes (to be added)
-# from api.dynamic_pricing_routes import router as pricing_router
-# app.include_router(pricing_router, prefix=f"/api/{API_VERSION}/pricing")
+# Day 7: Dynamic pricing routes (POST /quote, GET /model-status)
+from api.dynamic_pricing_routes import router as pricing_router
+app.include_router(pricing_router, prefix=f"/api/{API_VERSION}/pricing")
