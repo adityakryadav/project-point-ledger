@@ -818,4 +818,184 @@ git push origin master:main
 | -------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | **Separation of Concerns (Git)** | Maintaining discrete commits for distinct logical architectural components (Ledger vs. ML)            |
 | **Multi-file staging**           | Passing multiple file paths to a single `git add` command for grouped functionality                   |
-| **Audit trail preservation**     | Keeping the log synchronized perfectly with the commit tree via `B1/B3` inclusion strategy            |
+| **Audit trail preservation**     | Keeping the log synchronized perfectly with the commit tree via inclusion strategy                    |
+
+---
+
+## Day 8 — March 23, 2026 (Unit Tests for Ledger ACID & ML Latency)
+
+> **Consistency from Day 7**: Continuing the practice of **two separate commits per day** to delineate concerns perfectly into distinct functional areas.
+
+### Commit A — Ledger Transactions Unit Tests
+
+#### A1. Stage Ledger Service Files Selectively
+
+```bash
+git add ledger-accounting-service/tests/acid_concurrency_test.go
+```
+
+**What it does**: Stages only the new ledger concurrency test implementation.
+
+#### A2. Verify Only Ledger Files Are Staged
+
+```bash
+git status
+```
+
+**What it does**: Confirms that only `acid_concurrency_test.go` is staged under "Changes to be committed."
+
+#### A3. Commit Unit Tests
+
+```bash
+git commit -m "test(ledger): verify ACID concurrency properties for transaction workflow"
+```
+
+**What it does**: Commits the ledger work detailing the ACID invariant and transaction testing achievements without attributing to specific authors in messages.
+
+---
+
+### Commit B — ML Inference Testing
+
+#### B1. Stage ML Test Files Selectively
+
+```bash
+git add intelligence-ml-service/tests/inference_latency_test.py
+git add intelligence-ml-service/tests/fraud_score_accuracy_test.py
+git add GIT_COMMANDS_LOG.md
+```
+
+**What it does**: Stages the new unit tests, mock validations, and this updated Git log.
+
+#### B2. Verify Only Relevant Files Are Staged
+
+```bash
+git status
+```
+
+**What it does**: Confirms the ML service test files and log are staged.
+
+#### B3. Commit ML Work
+
+```bash
+git commit -m "test(ml): add inference latency and accuracy validation"
+```
+
+**What it does**: Commits the testing additions explicitly delineating inference capabilities.
+
+---
+
+### Push Both Commits
+
+#### P1. Verify Both Commits
+
+```bash
+git log --oneline -2
+```
+
+**What it does**: Shows the last 2 commits, assuring the two new Day 8 commits sit cleanly atop the chronological history.
+
+#### P2. Push to Remote (Both Branches)
+
+```bash
+git push origin master
+git push origin master:main
+```
+
+**What it does**: Pushes both new commits to `master` and syncs to `main` for complete evaluator visibility.
+
+---
+
+## Git Concepts Used Today
+
+| Concept                          | Explanation                                                                                           |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| **Separation of Concerns (Git)** | Maintaining discrete commits for distinct logical architectural components (Ledger vs. ML)            |
+| **Multi-file staging**           | Passing multiple file paths to a single `git add` command for grouped functionality                   |
+
+---
+
+## Day 9 — March 24, 2026 (Integration: ML Fraud Score & Feature Store Updater)
+
+### Commit A — Ledger Accounting ML Integration
+
+#### A1. Stage Ledger Service Files Selectively
+
+```bash
+git add ledger-accounting-service/handlers/exchange_handler.go
+```
+
+**What it does**: Stages only the exchange_handler.go file which now calls the ML service for fraud scoring before committing transactions.
+
+#### A2. Verify Only Ledger Files Are Staged
+
+```bash
+git status
+```
+
+**What it does**: Confirms that only `exchange_handler.go` is staged under "Changes to be committed."
+
+#### A3. Commit Ledger ML Integration
+
+```bash
+git commit -m "feat(ledger): wire fraud score check into transaction flow"
+```
+
+**What it does**: Commits the Ledger accounting work, maintaining the practice of two separate commits per day without mentioning member names.
+
+---
+
+### Commit B — ML Feature Store Updater
+
+#### B1. Stage ML Service Files Selectively
+
+```bash
+git add intelligence-ml-service/workers/feature_store_updater.py
+git add GIT_COMMANDS_LOG.md
+```
+
+**What it does**: Stages the new `feature_store_updater.py` worker and this updated Git log.
+
+#### B2. Verify Only Relevant Files Are Staged
+
+```bash
+git status
+```
+
+**What it does**: Confirms the ML service files and log are staged.
+
+#### B3. Commit ML Work
+
+```bash
+git commit -m "feat(ml): add feature store updater background worker"
+```
+
+**What it does**: Commits the ML service worker implementation separately.
+
+---
+
+### Push Both Commits
+
+#### P1. Verify Both Commits
+
+```bash
+git log --oneline -2
+```
+
+**What it does**: Shows the last 2 commits to assure chronological history is intact.
+
+#### P2. Push to Remote (Both Branches)
+
+```bash
+git push origin master
+git push origin master:main
+```
+
+**What it does**: Syncs the local `master` with remote `master` and `main`.
+
+---
+
+## Git Concepts Used Today
+
+| Concept                          | Explanation                                                                                           |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| **Separation of Concerns (Git)** | Maintaining discrete commits for distinct logical architectural components (Ledger vs. ML)            |
