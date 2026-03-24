@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const healthRoutes = require("./routes/health.routes");
-const { requestLogger } = require("./middleware");
+const { requestLogger, rateLimiter } = require("./middleware");
 
 dotenv.config();
 
@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(requestLogger);
+app.use(rateLimiter);
 
 app.use("/", healthRoutes);
 
