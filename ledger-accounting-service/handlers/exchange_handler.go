@@ -30,10 +30,11 @@
 package handlers
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/json"
-	"fmt"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -82,10 +83,12 @@ type ExchangeHTTPRequest struct {
 	// Examples: "DL" (Delhi), "MH" (Maharashtra), "KA" (Karnataka).
 	StateCode string `json:"state_code"`
 
-	// FraudScore is the XGBoost fraud probability (0.0 = safe, 1.0 = fraud).
-	// In production, this is set by calling the ML service (Day 9 integration).
-	// For now, it's passed directly in the request for testing.
-	FraudScore float64 `json:"fraud_score"`
+	// DeviceHash is the SHA-256 hash of the user's device fingerprint.
+	// Forwarded to ML service for fraud scoring.
+	DeviceHash string `json:"device_hash"`
+
+	// KYCStatus is the user's KYC tier: 'SMALL' or 'FULL'.
+	KYCStatus string `json:"kyc_status"`
 }
 
 // ExchangeHTTPResponse is the JSON schema for exchange API responses.
@@ -280,10 +283,24 @@ func (h *ExchangeHandler) HandleExchange(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	h.logger.Printf("Processing exchange: txn_id=%s, user=%s, partner=%s, points=%.2f, rate=%.4f, state=%s, fraud=%.4f",
+	h.logger.Printf("Processing exchange: txn_id=%s, user=%s, partner=%s, points=%.2f, rate=%.4f, state=%s",
 		txnID, httpReq.UserID, httpReq.SourcePartnerID,
 		httpReq.SourcePoints, httpReq.ExchangeRate,
-		httpReq.StateCode, httpReq.FraudScore)
+		httpReq.StateCode)
+
+	// =========================================================================
+	// Step 4.5: Call ML Service for Fraud Score
+	// =========================================================================
+	amountINR := httpReq.SourcePoints * httpReq.ExchangeRate
+	fraudScore, err := h.getFraudScore(httpReq.UserID, httpReq.DeviceHash, amountINR, httpReq.KYCStatus)
+	if err != nil {
+		h.logger.Printf("ERROR: Fraud scoring failed: %v", err)
+		// Fallback mechanism: treat as BLOCKED for safety
+		h.handleTransactionError(w, txnID, nil, services.ErrTransactionBlocked)
+		return
+	}
+
+	h.logger.Printf("Fraud score retrieved: txn_id=%s, score=%.4f", txnID, fraudScore)
 
 	// =========================================================================
 	// Step 5: Map HTTP DTO → internal ExchangeRequest
@@ -294,7 +311,7 @@ func (h *ExchangeHandler) HandleExchange(w http.ResponseWriter, r *http.Request)
 		SourcePoints:    httpReq.SourcePoints,
 		ExchangeRate:    httpReq.ExchangeRate,
 		StateCode:       strings.ToUpper(httpReq.StateCode),
-		FraudScore:      httpReq.FraudScore,
+		FraudScore:      fraudScore,
 	}
 
 	// =========================================================================
@@ -355,8 +372,7 @@ func (h *ExchangeHandler) handleTransactionError(
 		errors.Is(err, services.ErrInvalidPartnerID) ||
 		errors.Is(err, services.ErrInvalidSourcePoints) ||
 		errors.Is(err, services.ErrInvalidExchangeRate) ||
-		errors.Is(err, services.ErrInvalidStateCode) ||
-		errors.Is(err, services.ErrFraudScoreOutOfRange) {
+		errors.Is(err, services.ErrInvalidStateCode) {
 
 		h.writeError(w, http.StatusBadRequest, ErrCodeValidation, err.Error())
 		return
@@ -469,9 +485,6 @@ func validateHTTPRequest(req *ExchangeHTTPRequest) string {
 	if len(req.StateCode) != 2 {
 		return fmt.Sprintf("state_code must be a 2-letter Indian state code, got '%s'", req.StateCode)
 	}
-	if req.FraudScore < 0 || req.FraudScore > 1.0 {
-		return fmt.Sprintf("fraud_score must be between 0.0 and 1.0, got %.4f", req.FraudScore)
-	}
 	return ""
 }
 
@@ -522,4 +535,59 @@ func (h *ExchangeHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/exchange", h.HandleExchange)
 
 	h.logger.Println("Registered: POST /api/v1/exchange")
+}
+
+// =============================================================================
+// ML Service Integration
+// =============================================================================
+
+type fraudScoreRequestJSON struct {
+	UserID     string  `json:"user_id"`
+	DeviceHash string  `json:"device_hash"`
+	Amount     float64 `json:"amount"`
+	KYCStatus  string  `json:"kyc_status"`
+}
+
+type fraudScoreResponseJSON struct {
+	FraudScore float64 `json:"fraud_score"`
+	Decision   string  `json:"decision"`
+}
+
+func (h *ExchangeHandler) getFraudScore(userID, deviceHash string, amount float64, kycStatus string) (float64, error) {
+	if deviceHash == "" {
+		deviceHash = "unknown_device"
+	}
+	if kycStatus == "" {
+		kycStatus = "SMALL"
+	}
+
+	reqPayload := fraudScoreRequestJSON{
+		UserID:     userID,
+		DeviceHash: deviceHash,
+		Amount:     amount,
+		KYCStatus:  kycStatus,
+	}
+
+	reqBytes, err := json.Marshal(reqPayload)
+	if err != nil {
+		return 0, fmt.Errorf("marshal fail: %w", err)
+	}
+
+	client := &http.Client{Timeout: 200 * time.Millisecond}
+	resp, err := client.Post("http://localhost:8001/api/v1/fraud/score", "application/json", bytes.NewReader(reqBytes))
+	if err != nil {
+		return 0, fmt.Errorf("post fail: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("non-200 status: %d", resp.StatusCode)
+	}
+
+	var resPayload fraudScoreResponseJSON
+	if err := json.NewDecoder(resp.Body).Decode(&resPayload); err != nil {
+		return 0, fmt.Errorf("decode fail: %w", err)
+	}
+
+	return resPayload.FraudScore, nil
 }
