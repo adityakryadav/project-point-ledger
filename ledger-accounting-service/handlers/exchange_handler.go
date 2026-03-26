@@ -89,6 +89,17 @@ type ExchangeHTTPRequest struct {
 
 	// KYCStatus is the user's KYC tier: 'SMALL' or 'FULL'.
 	KYCStatus string `json:"kyc_status"`
+
+	// WalletBalance is the current balance of the user's wallet.
+	// For Day 11 testing, this is passed in the request body.
+	// In production, this would be fetched from the DB by the TransactionManager.
+	WalletBalance float64 `json:"wallet_balance"`
+
+	// MonthlyLoad is the total amount loaded into the user's wallet this month.
+	MonthlyLoad float64 `json:"monthly_load"`
+
+	// YearlyLoad is the total amount loaded into the user's wallet this year.
+	YearlyLoad float64 `json:"yearly_load"`
 }
 
 // ExchangeHTTPResponse is the JSON schema for exchange API responses.
@@ -323,6 +334,10 @@ func (h *ExchangeHandler) HandleExchange(w http.ResponseWriter, r *http.Request)
 		ExchangeRate:    exchangeRate,
 		StateCode:       strings.ToUpper(httpReq.StateCode),
 		FraudScore:      fraudScore,
+		KYCStatus:       strings.ToUpper(httpReq.KYCStatus),
+		WalletBalance:   httpReq.WalletBalance,
+		MonthlyLoad:     httpReq.MonthlyLoad,
+		YearlyLoad:      httpReq.YearlyLoad,
 	}
 
 	// =========================================================================
@@ -375,6 +390,13 @@ func (h *ExchangeHandler) handleTransactionError(
 			Status:    "BLOCKED",
 		}
 		h.writeJSON(w, http.StatusForbidden, response)
+		return
+	}
+
+	// Check for PPI Limits
+	if errors.Is(err, services.ErrPPILimitExceeded) {
+		h.writeError(w, http.StatusBadRequest, ErrCodeValidation,
+			fmt.Sprintf("Transaction denied: %s", err.Error()))
 		return
 	}
 

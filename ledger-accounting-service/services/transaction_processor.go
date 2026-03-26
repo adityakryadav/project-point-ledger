@@ -73,6 +73,7 @@ var (
 	ErrFraudScoreOutOfRange  = errors.New("fraud_score must be between 0.0 and 1.0")
 	ErrTransactionBlocked    = errors.New("transaction blocked by fraud detection")
 	ErrDoubleEntryViolation  = errors.New("double-entry invariant violated during transaction assembly")
+	ErrPPILimitExceeded      = errors.New("PPI limit exceeded for wallet")
 )
 
 // =============================================================================
@@ -104,6 +105,18 @@ type ExchangeRequest struct {
 	// FraudScore is the XGBoost fraud probability (0.0 = safe, 1.0 = fraud).
 	// Set by the fraud scoring service before the transaction is committed.
 	FraudScore float64 `json:"fraud_score"`
+
+	// KYCStatus is the user's KYC tier: 'SMALL' or 'FULL'.
+	KYCStatus string `json:"kyc_status"`
+
+	// WalletBalance is the current balance of the user's wallet.
+	WalletBalance float64 `json:"wallet_balance"`
+
+	// MonthlyLoad is the total amount loaded into the user's wallet this month.
+	MonthlyLoad float64 `json:"monthly_load"`
+
+	// YearlyLoad is the total amount loaded into the user's wallet this year.
+	YearlyLoad float64 `json:"yearly_load"`
 }
 
 // GSTRecord represents a single row in the gst_records database table.
@@ -301,7 +314,23 @@ func CommitExchangeTransaction(txnID string, req *ExchangeRequest) (*ExchangeRes
 	}
 
 	// =========================================================================
-	// Step 4: Verify invariant — gross = fee + gst + net
+	// Step 4: Validate PPI Limits
+	// =========================================================================
+	if req.KYCStatus == "SMALL" {
+		if req.MonthlyLoad+netValue > 10000 {
+			return nil, fmt.Errorf("%w: Small PPI monthly load limit (10,000) exceeded", ErrPPILimitExceeded)
+		}
+		if req.YearlyLoad+netValue > 120000 {
+			return nil, fmt.Errorf("%w: Small PPI yearly load limit (1,20,000) exceeded", ErrPPILimitExceeded)
+		}
+	} else if req.KYCStatus == "FULL" {
+		if req.WalletBalance+netValue > 200000 {
+			return nil, fmt.Errorf("%w: Full KYC balance limit (2,00,000) exceeded", ErrPPILimitExceeded)
+		}
+	}
+
+	// =========================================================================
+	// Step 5: Verify invariant — gross = fee + gst + net
 	// =========================================================================
 	expectedGross := serviceFee + gstBreakdown.TotalGST + netValue
 	if !almostEqual(grossValue, expectedGross) {
@@ -312,10 +341,10 @@ func CommitExchangeTransaction(txnID string, req *ExchangeRequest) (*ExchangeRes
 	}
 
 	// =========================================================================
-	// Step 5: Create double-entry journal
+	// Step 6: Create double-entry journal
 	// =========================================================================
 
-	// 5a. Create journal entry header (debit == credit == grossValue)
+	// 6a. Create journal entry header (debit == credit == grossValue)
 	journalEntry, err := models.NewJournalEntry(
 		txnID,
 		models.EntryTypeExchange,
@@ -326,7 +355,7 @@ func CommitExchangeTransaction(txnID string, req *ExchangeRequest) (*ExchangeRes
 		return nil, fmt.Errorf("failed to create journal entry: %w", err)
 	}
 
-	// 5b. Build ledger lines using the Day 3 helper
+	// 6b. Build ledger lines using the Day 3 helper
 	// EntryID is empty here (assigned by PostgreSQL on INSERT), but we use
 	// txnID as a temporary reference for the in-memory assembly.
 	ledgerLines, err := models.BuildExchangeLines(
@@ -341,14 +370,14 @@ func CommitExchangeTransaction(txnID string, req *ExchangeRequest) (*ExchangeRes
 	}
 
 	// =========================================================================
-	// Step 6: Validate double-entry invariant on assembled lines
+	// Step 7: Validate double-entry invariant on assembled lines
 	// =========================================================================
 	if err := models.ValidateLineSet(ledgerLines); err != nil {
 		return nil, fmt.Errorf("%w: %s", ErrDoubleEntryViolation, err.Error())
 	}
 
 	// =========================================================================
-	// Step 7: Assemble result
+	// Step 8: Assemble result
 	// =========================================================================
 	result := &ExchangeResult{
 		TxnID:         txnID,
@@ -595,6 +624,12 @@ func validateExchangeRequest(req *ExchangeRequest) error {
 	}
 	if req.FraudScore < 0 || req.FraudScore > 1.0 {
 		return fmt.Errorf("%w: got %.4f", ErrFraudScoreOutOfRange, req.FraudScore)
+	}
+	if req.KYCStatus != "SMALL" && req.KYCStatus != "FULL" {
+		return fmt.Errorf("invalid KYC status: '%s' (must be SMALL or FULL)", req.KYCStatus)
+	}
+	if req.WalletBalance < 0 || req.MonthlyLoad < 0 || req.YearlyLoad < 0 {
+		return fmt.Errorf("wallet limits and balance must be non-negative")
 	}
 	return nil
 }
