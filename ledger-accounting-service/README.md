@@ -54,3 +54,18 @@ Core financial backend service for the ILPEP (Indian Loyalty Points Exchange Pla
 # Apply initial schema to PostgreSQL
 psql -U postgres -d ilpep -f db/migrations/001_initial_schema.sql
 ```
+
+## Running Tests
+
+To verify ACID invariants, double-entry logic, PPI limits, and idempotency checks, run the Golang test suite:
+```bash
+go test ./tests/... -v
+```
+
+## Running the Service
+
+Build and run the Ledger HTTP handler mapping (defaults to port 8080):
+```bash
+go run .
+```
+*(Ensure PostgreSQL configuration is injected correctly when launching).*
