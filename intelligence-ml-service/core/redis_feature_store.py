@@ -76,31 +76,72 @@ class RedisFeatureStore:
     # Connection Management
     # ==========================================================================
 
-    async def connect(self) -> None:
+    async def connect(self, max_retries: int = 3, base_delay: float = 0.5) -> None:
         """
-        Establish connection pool to Redis.
+        Establish connection pool to Redis with automatic retry and backoff.
 
         Creates a connection pool with max 20 connections for concurrent
         access from multiple FastAPI request handlers.
+
+        Args:
+            max_retries: Maximum number of reconnection attempts.
+            base_delay: Base delay in seconds between retries (exponential backoff).
         """
         if self._client is not None:
             logger.warning("RedisFeatureStore is already connected")
             return
 
-        self._pool = aioredis.ConnectionPool(
-            host=REDIS_HOST,
-            port=REDIS_PORT,
-            db=REDIS_DB,
-            password=REDIS_PASSWORD,
-            max_connections=20,
-            decode_responses=True,  # Auto-decode bytes to str
-        )
-        self._client = aioredis.Redis(connection_pool=self._pool)
+        import asyncio
 
-        logger.info(
-            "RedisFeatureStore connected to %s:%s (db=%s)",
-            REDIS_HOST, REDIS_PORT, REDIS_DB,
+        last_error = None
+        for attempt in range(1, max_retries + 1):
+            try:
+                self._pool = aioredis.ConnectionPool(
+                    host=REDIS_HOST,
+                    port=REDIS_PORT,
+                    db=REDIS_DB,
+                    password=REDIS_PASSWORD,
+                    max_connections=20,
+                    decode_responses=True,  # Auto-decode bytes to str
+                    socket_connect_timeout=2,  # 2 second connect timeout
+                    retry_on_timeout=True,
+                )
+                self._client = aioredis.Redis(connection_pool=self._pool)
+
+                # Verify the connection is alive
+                await self._client.ping()
+
+                logger.info(
+                    "RedisFeatureStore connected to %s:%s (db=%s) on attempt %d",
+                    REDIS_HOST, REDIS_PORT, REDIS_DB, attempt,
+                )
+                return
+            except Exception as e:
+                last_error = e
+                logger.warning(
+                    "Redis connection attempt %d/%d failed: %s",
+                    attempt, max_retries, str(e),
+                )
+                # Clean up failed connection
+                self._client = None
+                if self._pool is not None:
+                    try:
+                        await self._pool.disconnect()
+                    except Exception:
+                        pass
+                    self._pool = None
+
+                if attempt < max_retries:
+                    delay = base_delay * (2 ** (attempt - 1))
+                    logger.info("Retrying in %.1f seconds...", delay)
+                    await asyncio.sleep(delay)
+
+        logger.error(
+            "RedisFeatureStore failed to connect after %d attempts: %s",
+            max_retries, str(last_error),
         )
+        # Don't raise here — allow the service to start without Redis
+        # Operations will fail gracefully when _ensure_connected raises
 
     async def disconnect(self) -> None:
         """Close the Redis connection pool and release resources."""

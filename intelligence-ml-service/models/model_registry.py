@@ -132,10 +132,24 @@ class ModelRegistry:
 
         try:
             import torch
+            from training.train_dqn import DQNNetwork, STATE_DIM, PRICE_ACTIONS
 
-            model = torch.load(
-                model_path, map_location=torch.device("cpu")
+            checkpoint = torch.load(
+                model_path, map_location=torch.device("cpu"), weights_only=False
             )
+            
+            if isinstance(checkpoint, dict):
+                model = DQNNetwork(state_dim=STATE_DIM, action_dim=len(PRICE_ACTIONS))
+                # Check if it was saved as {'model_state_dict': ..., etc.} or direct state dict
+                if "model_state_dict" in checkpoint:
+                    model.load_state_dict(checkpoint["model_state_dict"])
+                else:
+                    model.load_state_dict(checkpoint)
+                model.eval()
+            else:
+                model = checkpoint
+                model.eval()
+
             self._register_model("pricing", model, version, model_path)
             logger.info("Loaded pricing model %s from %s", version, model_path)
             return True

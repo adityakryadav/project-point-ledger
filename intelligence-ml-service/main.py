@@ -88,12 +88,30 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="ILPEP Intelligence & ML Service",
     description=(
-        "AI/ML microservice for the Indian Loyalty Points Exchange Platform. "
-        "Provides real-time fraud detection (XGBoost) and dynamic pricing (DQN) "
-        "for transaction processing."
+        "AI/ML microservice for the Indian Loyalty Points Exchange Platform (ILPEP). "
+        "Provides real-time fraud detection via XGBoost classifier and dynamic pricing "
+        "via Deep Q-Network (DQN) agent for point-to-wallet exchange transactions.\n\n"
+        "## Features\n"
+        "- **Fraud Scoring** — XGBoost-based fraud probability scoring (<200ms)\n"
+        "- **Dynamic Pricing** — DQN agent for optimal exchange rate determination\n"
+        "- **Feature Store** — Redis-backed user risk profiles with auto-reconnect\n"
+        "- **Model Registry** — Hot-swappable ML models with version tracking\n"
+        "- **Drift Detection** — KL Divergence monitor for automated retraining triggers"
     ),
     version=API_VERSION,
     lifespan=lifespan,
+    openapi_tags=[
+        {"name": "System", "description": "Health checks and service metadata"},
+        {"name": "Fraud Detection", "description": "Real-time fraud scoring via XGBoost classifier"},
+        {"name": "Dynamic Pricing", "description": "DQN-powered exchange rate optimization"},
+    ],
+    contact={
+        "name": "ILPEP Engineering",
+        "url": "https://github.com/adityakryadav/project-point-ledger",
+    },
+    license_info={
+        "name": "MIT",
+    },
 )
 
 
