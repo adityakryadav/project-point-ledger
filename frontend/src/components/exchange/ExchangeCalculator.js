@@ -32,8 +32,12 @@ export default function ExchangeCalculator() {
 
   function onSubmit(e) {
     e.preventDefault();
+    if (!amount) {
+      setSubmitState({ status: 'error', message: null, error: 'Points amount is required.' });
+      return;
+    }
     if (!validPoints) {
-      setSubmitState({ status: 'error', message: null, error: 'Enter a valid points amount.' });
+      setSubmitState({ status: 'error', message: null, error: 'Enter a valid points amount greater than 0.' });
       return;
     }
 
@@ -113,8 +117,8 @@ export default function ExchangeCalculator() {
           </div>
 
           {submitState.error && (
-            <div className="p-4 bg-rose-50 border border-rose-100 rounded-xl flex items-center gap-3 text-rose-700 text-sm font-bold ui-fade-in">
-              <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="p-4 bg-rose-50 border border-rose-100 rounded-xl flex items-center gap-3 text-rose-600 text-xs font-bold ui-fade-in">
+              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               {submitState.error}
@@ -122,8 +126,8 @@ export default function ExchangeCalculator() {
           )}
 
           {submitState.status === 'success' && (
-            <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-3 text-emerald-700 text-sm font-bold ui-fade-in">
-              <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-3 text-emerald-600 text-xs font-bold ui-fade-in">
+              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               {submitState.message}
@@ -132,7 +136,7 @@ export default function ExchangeCalculator() {
 
           <Button
             type="submit"
-            disabled={!validPoints || submitState.status === 'loading'}
+            disabled={!amount || parseFloat(amount) <= 0 || submitState.status === 'loading'}
             className="w-full h-16 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-lg shadow-xl shadow-blue-500/20"
           >
             {submitState.status === 'loading' ? (

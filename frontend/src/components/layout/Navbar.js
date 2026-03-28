@@ -1,16 +1,50 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function Navbar() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const handleProfile = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("PROFILE CLICKED");
+    setIsDropdownOpen(false);
+    navigate('/profile');
+  };
+
+  const handleLogout = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("LOGOUT CLICKED");
+    setIsDropdownOpen(false);
+    localStorage.clear();
+    navigate('/login');
+  };
+
+  const initials = user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : '??';
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
     <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200/60 shadow-sm">
       <div className="px-8 h-16 flex items-center justify-between">
         <div className="flex items-center lg:hidden gap-3">
-          <div className="h-8 w-8 flex items-center justify-center rounded bg-blue-600 text-white shadow-lg shadow-blue-500/20">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Z" stroke="currentColor" strokeWidth="2" />
-            </svg>
+          <div className="flex items-center lg:hidden">
+            <img src="/logo.png" alt="Point Ledger" className="h-10 w-auto object-contain" />
           </div>
-          <span className="font-black text-slate-900 tracking-tight uppercase text-sm">Point Ledger</span>
         </div>
 
         <div className="hidden lg:block">
@@ -30,14 +64,43 @@ export default function Navbar() {
           
           <div className="h-8 w-px bg-slate-200/60" />
           
-          <div className="flex items-center gap-3.5 pl-2 group cursor-pointer">
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-black text-slate-900 leading-none group-hover:text-blue-600 transition-colors">Jashwanth</p>
-              <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">System Admin</p>
-            </div>
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-slate-100 to-slate-200 border border-slate-200 flex items-center justify-center text-slate-700 font-black text-xs shadow-sm group-hover:shadow-md group-hover:-translate-y-0.5 transition-all duration-300">
-              JW
-            </div>
+          <div className="relative" ref={dropdownRef}>
+            <button 
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center gap-3.5 pl-2 group focus:outline-none cursor-pointer"
+            >
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-black text-slate-900 leading-none group-hover:text-blue-600 transition-colors">{user?.name || 'Guest'}</p>
+                <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">System Admin</p>
+              </div>
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-slate-100 to-slate-200 border border-slate-200 flex items-center justify-center text-slate-700 font-black text-xs shadow-sm group-hover:shadow-md group-hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
+                {initials}
+              </div>
+            </button>
+
+            {isDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-2 ui-fade-in z-50">
+                <button 
+                  onClick={handleProfile}
+                  className="w-full text-left px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors flex items-center gap-2 cursor-pointer"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Profile
+                </button>
+                <div className="h-px bg-slate-100 my-1 mx-2" />
+                <button 
+                  onClick={handleLogout}
+                  className="w-full text-left px-4 py-2 text-sm font-bold text-rose-600 hover:bg-rose-50 transition-colors flex items-center gap-2 cursor-pointer"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

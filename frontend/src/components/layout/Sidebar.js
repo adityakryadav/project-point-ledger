@@ -12,12 +12,13 @@ export default function Sidebar() {
 
   return (
     <aside className="w-64 bg-[#0f172a] flex flex-col h-screen sticky top-0 hidden lg:flex border-r border-slate-800/50">
-      <div className="p-8 flex items-center gap-3.5">
-        <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Z" stroke="currentColor" strokeWidth="2" />
-            <circle cx="12" cy="12" r="3" fill="white" fillOpacity="0.3" />
-          </svg>
+      <div className="flex items-center gap-3 px-4 py-6">
+        <div className="bg-white/10 p-2 rounded-xl backdrop-blur-md">
+          <img 
+            src="/logo.png" 
+            alt="Point Ledger" 
+            className="h-12 w-auto object-contain drop-shadow-[0_4px_16px_rgba(99,102,241,0.6)]" 
+          />
         </div>
         <span className="text-xl font-black text-white tracking-tight uppercase">Point Ledger</span>
       </div>
