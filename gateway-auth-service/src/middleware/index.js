@@ -3,6 +3,9 @@ const requestLogger = (req, res, next) => {
   next();
 };
 
+const { jwtValidator } = require("./jwt_validator");
+
 module.exports = {
   requestLogger,
+  jwtValidator,
 };
