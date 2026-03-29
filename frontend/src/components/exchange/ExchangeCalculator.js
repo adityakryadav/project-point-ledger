@@ -78,19 +78,19 @@ export default function ExchangeCalculator() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.4fr_0.6fr]">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col transition-colors duration-300">
-        <div className="p-8 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.4fr_0.6fr] transition-colors duration-300">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col transition-all duration-300">
+        <div className="p-8 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 transition-colors duration-300">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">Asset Exchange</p>
-              <h1 className="mt-2 text-3xl font-black text-slate-900 dark:text-white tracking-tight">Convert Points to INR</h1>
-              <p className="mt-2 text-slate-500 dark:text-slate-400 font-medium">Fast, secure conversion with transparent fee modeling.</p>
+              <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest transition-colors duration-300">Asset Exchange</p>
+              <h1 className="mt-2 text-3xl font-black text-gray-900 dark:text-white tracking-tight transition-colors duration-300">Convert Points to INR</h1>
+              <p className="mt-2 text-gray-500 dark:text-gray-400 font-medium transition-colors duration-300">Fast, secure conversion with transparent fee modeling.</p>
             </div>
             <div className="hidden sm:block">
-              <div className="px-4 py-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">Current Rate</p>
-                <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">1 Point = ₹ 0.75</p>
+              <div className="px-4 py-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-all duration-300">
+                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-tighter transition-colors duration-300">Current Rate</p>
+                <p className="text-sm font-black text-gray-900 dark:text-white mt-0.5 transition-colors duration-300">1 Point = ₹ 0.75</p>
               </div>
             </div>
           </div>
@@ -103,14 +103,14 @@ export default function ExchangeCalculator() {
               label="Source Currency"
               value={from}
               disabled
-              inputClassName="bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-bold"
+              inputClassName="bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 font-bold transition-all duration-300"
             />
             <Input
               id="to"
               label="Target Currency"
               value={to}
               disabled
-              inputClassName="bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-bold"
+              inputClassName="bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 font-bold transition-all duration-300"
             />
           </div>
 
@@ -122,16 +122,16 @@ export default function ExchangeCalculator() {
               placeholder="e.g. 5000"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              labelClassName="text-sm font-black text-slate-900 dark:text-white"
-              inputClassName="h-16 text-2xl font-black px-6 border-slate-200 dark:border-slate-700 dark:bg-slate-900/50 dark:text-white focus:ring-blue-500/10 focus:border-blue-500"
+              labelClassName="text-sm font-black text-gray-900 dark:text-white transition-colors duration-300"
+              inputClassName="h-16 text-2xl font-black px-6 border-gray-200 dark:border-gray-700 dark:bg-gray-900/50 dark:text-white focus:ring-blue-500/10 focus:border-blue-500 transition-all duration-300"
             />
-            <div className="absolute right-6 bottom-4 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+            <div className="absolute right-6 bottom-4 text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest transition-colors duration-300">
               Points
             </div>
           </div>
 
           {submitState.error && (
-            <div className="p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/30 rounded-xl flex items-center gap-3 text-rose-600 dark:text-rose-400 text-xs font-bold ui-fade-in">
+            <div className="p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/30 rounded-xl flex items-center gap-3 text-rose-600 dark:text-rose-400 text-xs font-bold ui-fade-in transition-all duration-300">
               <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -140,7 +140,7 @@ export default function ExchangeCalculator() {
           )}
 
           {submitState.status === 'success' && (
-            <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30 rounded-xl flex items-center gap-3 text-emerald-600 dark:text-emerald-400 text-xs font-bold ui-fade-in">
+            <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30 rounded-xl flex items-center gap-3 text-emerald-600 dark:text-emerald-400 text-xs font-bold ui-fade-in transition-all duration-300">
               <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
