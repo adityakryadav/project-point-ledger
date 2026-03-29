@@ -43,8 +43,8 @@ export default function TransactionsPage() {
   return (
     <div className="space-y-6 ui-fade-in-up">
       <div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-100">Transactions</h1>
-        <p className="mt-1 text-sm text-slate-400">Your recent point exchanges (mock data).</p>
+        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">Transactions</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Your recent point exchanges (mock data).</p>
       </div>
 
       <TransactionsTable rows={rows} loading={loading} error={error} onRetry={load} />
