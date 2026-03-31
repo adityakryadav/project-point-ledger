@@ -112,7 +112,7 @@ export default function SignupPage() {
       {/* Right Section: Signup Card */}
       <div className="flex-1 flex items-center justify-center px-4 lg:px-20 z-10">
         <div className="w-full max-w-md animate-fade-in-up">
-          <div className="bg-white/90 backdrop-blur-lg rounded-2xl shadow-2xl p-10 border border-white/20">
+          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg rounded-2xl shadow-2xl p-10 border border-white/20 dark:border-gray-700 transition-all duration-300">
             <Link to="/" className="flex items-center justify-center mb-6">
               <img 
                 src="/logo.png" 
@@ -122,14 +122,14 @@ export default function SignupPage() {
             </Link>
 
             <div className="mb-10 text-center">
-              <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">Create Account</h2>
-              <p className="text-gray-500 font-medium mt-2">Join the next generation terminal</p>
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight transition-colors duration-300">Create Account</h2>
+              <p className="text-gray-500 dark:text-gray-400 font-medium mt-2 transition-colors duration-300">Join the next generation terminal</p>
             </div>
 
             <form className="space-y-5" onSubmit={onSubmit}>
               <div className="gap-5 flex flex-col">
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2 ml-1">
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 ml-1 transition-colors duration-300">
                     Full Name
                   </label>
                   <input
@@ -140,14 +140,14 @@ export default function SignupPage() {
                     onChange={handleChange}
                     disabled={status.loading}
                     className={`block w-full px-4 py-3 rounded-lg border ${
-                      errors.name ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-white'
-                    } focus:ring-2 focus:ring-indigo-500 focus:scale-[1.02] outline-none transition-all duration-200 text-gray-900 placeholder:text-gray-400`}
+                      errors.name ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900'
+                    } focus:ring-2 focus:ring-indigo-500 focus:scale-[1.02] outline-none transition-all duration-200 text-gray-900 dark:text-white placeholder:text-gray-400`}
                   />
                   {errors.name && <p className="text-red-500 text-xs mt-1.5 ml-1">{errors.name}</p>}
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2 ml-1">
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 ml-1 transition-colors duration-300">
                     Email address
                   </label>
                   <input
@@ -158,15 +158,15 @@ export default function SignupPage() {
                     onChange={handleChange}
                     disabled={status.loading}
                     className={`block w-full px-4 py-3 rounded-lg border ${
-                      errors.email ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-white'
-                    } focus:ring-2 focus:ring-indigo-500 focus:scale-[1.02] outline-none transition-all duration-200 text-gray-900 placeholder:text-gray-400`}
+                      errors.email ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900'
+                    } focus:ring-2 focus:ring-indigo-500 focus:scale-[1.02] outline-none transition-all duration-200 text-gray-900 dark:text-white placeholder:text-gray-400`}
                   />
                   {errors.email && <p className="text-red-500 text-xs mt-1.5 ml-1">{errors.email}</p>}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2 ml-1">
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 ml-1 transition-colors duration-300">
                       Password
                     </label>
                     <input
@@ -177,13 +177,13 @@ export default function SignupPage() {
                       onChange={handleChange}
                       disabled={status.loading}
                       className={`block w-full px-4 py-3 rounded-lg border ${
-                        errors.password ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-white'
-                      } focus:ring-2 focus:ring-indigo-500 focus:scale-[1.02] outline-none transition-all duration-200 text-gray-900 placeholder:text-gray-400`}
+                        errors.password ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900'
+                      } focus:ring-2 focus:ring-indigo-500 focus:scale-[1.02] outline-none transition-all duration-200 text-gray-900 dark:text-white placeholder:text-gray-400`}
                     />
                     {errors.password && <p className="text-red-500 text-xs mt-1.5 ml-1">{errors.password}</p>}
                   </div>
                   <div>
-                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2 ml-1">
+                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 ml-1 transition-colors duration-300">
                       Confirm
                     </label>
                     <input
@@ -194,8 +194,8 @@ export default function SignupPage() {
                       onChange={handleChange}
                       disabled={status.loading}
                       className={`block w-full px-4 py-3 rounded-lg border ${
-                        errors.confirmPassword ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-white'
-                      } focus:ring-2 focus:ring-indigo-500 focus:scale-[1.02] outline-none transition-all duration-200 text-gray-900 placeholder:text-gray-400`}
+                        errors.confirmPassword ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900'
+                      } focus:ring-2 focus:ring-indigo-500 focus:scale-[1.02] outline-none transition-all duration-200 text-gray-900 dark:text-white placeholder:text-gray-400`}
                     />
                     {errors.confirmPassword && <p className="text-red-500 text-xs mt-1.5 ml-1">{errors.confirmPassword}</p>}
                   </div>
@@ -203,7 +203,7 @@ export default function SignupPage() {
               </div>
 
               {status.error && (
-                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-600 font-bold animate-fade-in" role="alert">
+                <div className="rounded-lg border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-xs text-red-600 dark:text-red-400 font-bold animate-fade-in" role="alert">
                   {status.error}
                 </div>
               )}
@@ -230,16 +230,16 @@ export default function SignupPage() {
 
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                  <div className="w-full border-t border-gray-200"></div>
+                  <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
                 </div>
                 <div className="relative flex justify-center text-xs uppercase tracking-wider">
-                  <span className="bg-white/0 px-4 text-gray-500 font-medium bg-transparent">OR CONTINUE WITH</span>
+                  <span className="bg-white/0 px-4 text-gray-500 dark:text-gray-400 font-medium bg-transparent">OR CONTINUE WITH</span>
                 </div>
               </div>
 
               <button
                 type="button"
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-lg bg-white text-sm font-medium text-gray-700 hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-sm font-medium text-gray-700 dark:text-gray-300 hover:shadow-md transition-all duration-200 active:scale-[0.98]"
               >
                 <svg className="h-5 w-5" viewBox="0 0 24 24">
                   <path
@@ -263,10 +263,10 @@ export default function SignupPage() {
               </button>
             </form>
 
-            <div className="mt-8 pt-6 border-t border-gray-100 text-center">
-              <p className="text-sm text-gray-600">
+            <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700 text-center">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Already have an account?{' '}
-                <Link to="/login" className="text-indigo-600 font-semibold hover:text-indigo-700 transition-colors">
+                <Link to="/login" className="text-indigo-600 dark:text-indigo-400 font-semibold hover:text-indigo-700 transition-colors">
                   Sign in
                 </Link>
               </p>

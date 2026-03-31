@@ -88,6 +88,5 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
       </div>
     </aside>
   );
-  );
 }
 
