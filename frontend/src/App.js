@@ -10,10 +10,12 @@ import ExchangePage from './pages/ExchangePage';
 import TransactionsPage from './pages/TransactionsPage';
 import CompleteProfilePage from './pages/CompleteProfilePage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import { ThemeProvider } from './context/ThemeContext';
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
       <Toaster 
         position="top-right" 
         reverseOrder={false} 
@@ -60,5 +62,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
+    </ThemeProvider>
   );
 }

@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 
-export default function Navbar({ isDark, setIsDark }) {
+export default function Navbar() {
+  const { isDark, toggleDarkMode } = useTheme();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -21,13 +23,11 @@ export default function Navbar({ isDark, setIsDark }) {
     e.stopPropagation();
     console.log("LOGOUT CLICKED");
     setIsDropdownOpen(false);
-    localStorage.clear();
+    localStorage.removeItem('point_ledger_user');
     navigate('/login');
   };
 
   const initials = user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : '??';
-
-  const toggleDarkMode = () => setIsDark(!isDark);
 
   // Close dropdown when clicking outside
   useEffect(() => {
