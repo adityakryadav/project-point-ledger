@@ -1,6 +1,7 @@
 import React from 'react';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
+import { useAuth } from '../../context/AuthContext';
 
 const POINT_TO_INR = 0.75;
 const FEE_RATE = 0.02; // 2% fee on gross INR
@@ -12,6 +13,7 @@ function formatINR(n) {
 }
 
 export default function ExchangeCalculator() {
+  const { dashboard, updateDashboard, appendTransaction } = useAuth();
   const from = 'Points';
   const to = 'INR';
   const [amount, setAmount] = React.useState('');
@@ -74,6 +76,20 @@ export default function ExchangeCalculator() {
       status: 'success',
       message: `Exchange queued: ${formatINR(netInr)} INR will be credited (mock).`,
       error: null,
+    });
+
+    updateDashboard({
+      exchangedPoints: (dashboard?.exchangedPoints || 0) + points,
+      walletBalance: (dashboard?.walletBalance || 0) + netInr,
+      platformFees: (dashboard?.platformFees || 0) + fee + gst,
+    });
+
+    appendTransaction({
+      id: `tx_${Date.now()}`,
+      date: new Date().toISOString(),
+      type: 'Exchange',
+      amount: netInr,
+      status: 'success',
     });
   }
 
