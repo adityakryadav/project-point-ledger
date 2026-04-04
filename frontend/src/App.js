@@ -8,6 +8,7 @@ import ProfilePage from './pages/ProfilePage';
 import DashboardPage from './pages/DashboardPage';
 import ExchangePage from './pages/ExchangePage';
 import TransactionsPage from './pages/TransactionsPage';
+import CompleteProfilePage from './pages/CompleteProfilePage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 export default function App() {
@@ -46,6 +47,7 @@ export default function App() {
         
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
+          <Route path="complete-profile" element={<CompleteProfilePage />} />
           <Route element={<Layout />}>
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="exchange" element={<ExchangePage />} />
