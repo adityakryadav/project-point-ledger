@@ -35,7 +35,7 @@ The generated XML follows this format:
 
 ---
 
-## 🧠 Features
+## Features
 
 * Input validation (required fields, types, ranges)
 * ISO timestamp validation
@@ -46,7 +46,7 @@ The generated XML follows this format:
 
 ---
 
-## 🛠️ Technologies Used
+##  Technologies Used
 
 * Python 3
 * xml.etree.ElementTree
@@ -54,7 +54,7 @@ The generated XML follows this format:
 
 ---
 
-## 📂 Project Structure
+##  Project Structure
 
 ```
 compliance-reporting-service/
@@ -66,7 +66,7 @@ compliance-reporting-service/
 
 ---
 
-## ▶️ How to Run
+## How to Run
 
 ### 1. Navigate to folder
 
@@ -82,7 +82,7 @@ python fiu_ind_report.py
 
 ---
 
-## 📥 Sample Input
+##  Sample Input
 
 ```python
 transactions = [
@@ -98,7 +98,7 @@ transactions = [
 
 ---
 
-## 📤 Sample Output
+## Sample Output
 
 ```xml
 <Batch>
@@ -116,7 +116,7 @@ transactions = [
 
 ---
 
-## ⚙️ Main Function
+## Main Function
 
 ```python
 GenerateFIUINDReport(transactions, output_file="report.xml")
@@ -129,7 +129,7 @@ GenerateFIUINDReport(transactions, output_file="report.xml")
 
 ---
 
-## ⚠️ Error Handling
+## Error Handling
 
 * Missing fields → raises error
 * Invalid data types → raises error
@@ -138,7 +138,7 @@ GenerateFIUINDReport(transactions, output_file="report.xml")
 
 ---
 
-## 📚 Use Case
+## Use Case
 
 * Fraud detection systems
 * Financial compliance reporting
@@ -146,7 +146,7 @@ GenerateFIUINDReport(transactions, output_file="report.xml")
 
 ---
 
-## 👩‍💻 Author
+## Author
 
 **Bhakti (Member 5 - DevOps & Compliance Engineer)**
 
