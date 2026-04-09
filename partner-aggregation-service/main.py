@@ -19,12 +19,25 @@ Run Flask API:
 from __future__ import annotations
 
 import argparse
+import datetime
 import logging
+import os
+import random
+import string
 import sys
 from typing import Any, Dict
 
 from adapter.hdfc_adapter import HDFCLoyaltyAdapter
 from etl.normalizer import LoyaltyValidationError, run_etl
+
+# Add sibling "xml-report" folder to import path.
+# This avoids ModuleNotFoundError when running from partner-aggregation-service.
+_CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+_XML_REPORT_DIR = os.path.abspath(os.path.join(_CURRENT_DIR, "..", "xml-report"))
+if _XML_REPORT_DIR not in sys.path:
+    sys.path.append(_XML_REPORT_DIR)
+
+from fiu_ind_report import GenerateFIUINDReport  # pyright: ignore[reportMissingImports]
 
 # ---------------------------------------------------------------------------
 # Logging: INFO to console; change to DEBUG to see more detail
@@ -82,6 +95,34 @@ def fetch_points(user_id: str) -> Dict[str, Any]:
         raise RuntimeError("Failed to fetch loyalty points") from e
 
 
+def _random_transaction_id(length: int = 12) -> str:
+    """Create a short random transaction id for demo use."""
+    chars = string.ascii_uppercase + string.digits
+    return "".join(random.choices(chars, k=length))
+
+
+def _build_suspicious_transaction(uid: str, amount: Any, fraud_score: float) -> Dict[str, Any]:
+    """Create transaction object expected by GenerateFIUINDReport."""
+    return {
+        "transaction_id": _random_transaction_id(),
+        "user_id": uid,
+        "amount": amount,
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "fraud_score": fraud_score,
+    }
+
+
+def _generate_fraud_score(uid: str) -> float:
+    """
+    Demo scoring:
+    - USER456 is forced above threshold to test XML generation easily.
+    - All other users get a random score between 0 and 1.
+    """
+    if uid.upper() == "USER456":
+        return 0.91
+    return round(random.uniform(0, 1), 4)
+
+
 def _demo_cli() -> None:
     """Sample input/output for learning — run without Flask."""
     sample_user = "USER123"
@@ -127,6 +168,18 @@ def _run_flask() -> None:
 
         try:
             data = fetch_points(str(uid))
+            fraud_score = _generate_fraud_score(str(uid))
+            data["fraud_score"] = fraud_score
+
+            if fraud_score > 0.85:
+                logger.info("Suspicious transaction detected → generating XML")
+                transaction = _build_suspicious_transaction(
+                    uid=str(data.get("user_id", uid)),
+                    amount=data.get("value_in_inr", 0),
+                    fraud_score=fraud_score,
+                )
+                GenerateFIUINDReport([transaction])
+
             return jsonify(data), 200
         except ValueError as e:
             return jsonify({"error": str(e)}), 400
