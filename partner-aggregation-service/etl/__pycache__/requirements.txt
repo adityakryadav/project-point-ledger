@@ -1,3 +1,0 @@
-# Core: standard library only for adapter + ETL + CLI demo
-# Optional HTTP API:
-flask>=3.0.0
