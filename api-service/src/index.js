@@ -18,17 +18,8 @@ app.use(cors({
   credentials: true,
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 min
-  max: 100,
-  message: { error: 'Too many requests, please try again later.' },
-});
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: { error: 'Too many auth attempts, please try again later.' },
-});
+const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100, message: { error: 'Too many requests.' } });
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: { error: 'Too many auth attempts.' } });
 
 app.use('/api/', limiter);
 app.use('/api/auth/login', authLimiter);
@@ -38,29 +29,37 @@ app.use('/api/auth/register', authLimiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// ─── GOOGLE OAUTH ─────────────────────────────────────────────
-passport.use(new GoogleStrategy(
-  {
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLE_CALLBACK_URL,
-  },
-  async (accessToken, refreshToken, profile, done) => {
-    try {
-      const user = await googleCallback(profile);
-      done(null, user);
-    } catch (err) {
-      done(err, null);
+// ─── GOOGLE OAUTH (only if credentials are configured) ───────
+const googleConfigured =
+  process.env.GOOGLE_CLIENT_ID &&
+  process.env.GOOGLE_CLIENT_ID !== 'your_google_client_id';
+
+if (googleConfigured) {
+  passport.use(new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: process.env.GOOGLE_CALLBACK_URL,
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        const user = await googleCallback(profile);
+        done(null, user);
+      } catch (err) {
+        done(err, null);
+      }
     }
-  }
-));
+  ));
+  console.log('✅ Google OAuth enabled');
+} else {
+  console.log('⚠️  Google OAuth disabled — add GOOGLE_CLIENT_ID to .env to enable');
+}
 
 app.use(passport.initialize());
 
 // ─── ROUTES ──────────────────────────────────────────────────
 app.use('/api', routes);
 
-// Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
 // ─── ERROR HANDLER ───────────────────────────────────────────
@@ -76,7 +75,7 @@ const start = async () => {
   try {
     await migrate();
     app.listen(PORT, () => {
-      console.log(`✅ Server running on http://localhost:${PORT}`);
+      console.log(`✅ Point Ledger API running on http://localhost:${PORT}`);
     });
   } catch (err) {
     console.error('Failed to start server:', err);
