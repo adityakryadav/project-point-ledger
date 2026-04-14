@@ -8,6 +8,7 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { migrate } = require('./config/db');
 const routes = require('./routes/index');
 const { googleCallback } = require('./controllers/authController');
+const { startCouponService } = require('./services/couponService');
 
 const app = express();
 
@@ -76,6 +77,7 @@ const start = async () => {
     await migrate();
     app.listen(PORT, () => {
       console.log(`✅ Point Ledger API running on http://localhost:${PORT}`);
+      startCouponService(); // Start background real-time coupon generation
     });
   } catch (err) {
     console.error('Failed to start server:', err);

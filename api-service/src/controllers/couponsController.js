@@ -89,16 +89,15 @@ const getCategories = async (req, res) => {
 };
 
 // POST /api/coupons/generate
-// Fixed logic:
-//   A) No filter:      coupon from 500-tier, charge 500 pts total
-//   B) Category:       coupon from 350-tier, charge 500 pts (200 coupon + 150 category premium)
-//   C) Subcategory:    coupon from 200-tier, charge 500 pts (200 coupon + 150 category + 150 brand)
+// New logic: user specifies how many points to spend.
+// System finds a coupon with points_required <= points_to_spend,
+// picking the closest match (best value). Category/brand filters narrow it down.
 const generateCoupon = async (req, res) => {
   const client = await getClient();
   try {
     await client.query('BEGIN');
 
-    const { card_id, category_slug, subcategory_slug } = req.body;
+    const { card_id, category_slug, subcategory_slug, points_to_spend } = req.body;
 
     // Get user's points
     const { rows: pointRows } = await client.query(
@@ -115,31 +114,28 @@ const generateCoupon = async (req, res) => {
     }
 
     const userPoints = pointRows[0].available_points;
-    const TOTAL_CHARGE = 500; // Always charge 500 points
+    const totalCharge = parseInt(points_to_spend) || 0;
 
-    if (userPoints < TOTAL_CHARGE) {
+    if (totalCharge <= 0) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ error: `You need at least 500 points to generate a coupon. You have ${userPoints}.` });
+      return res.status(400).json({ error: 'Please specify how many points to spend.' });
     }
 
-    // Determine case and breakdown
-    let filterCase = 'none';
-    if (subcategory_slug) filterCase = 'subcategory';
-    else if (category_slug) filterCase = 'category';
+    if (userPoints < totalCharge) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: `Not enough points. You have ${userPoints}, need ${totalCharge}.` });
+    }
 
-    const breakdown = CHARGE_BREAKDOWN[filterCase];
-    const { couponTier } = breakdown;
-
-    // Find a random coupon from the correct tier + filter
+    // Find best matching coupon: points_required <= totalCharge, closest match, random within that tier
     let couponSql = `
       SELECT cp.*, cat.name AS category_name, cat.icon AS category_icon,
              parent.name AS parent_category_name
       FROM coupons cp
       JOIN coupon_categories cat ON cat.id = cp.category_id
       LEFT JOIN coupon_categories parent ON parent.id = cat.parent_id
-      WHERE cp.is_active = true AND cp.points_required = $1
+      WHERE cp.is_active = true AND cp.points_required <= $1
     `;
-    const couponParams = [couponTier];
+    const couponParams = [totalCharge];
     let pIdx = 2;
 
     if (subcategory_slug) {
@@ -150,21 +146,22 @@ const generateCoupon = async (req, res) => {
       couponParams.push(category_slug); pIdx++;
     }
 
-    couponSql += ' ORDER BY RANDOM() LIMIT 1';
+    // Pick highest value coupon available (closest to points_to_spend), random among ties
+    couponSql += ` ORDER BY cp.points_required DESC, RANDOM() LIMIT 1`;
 
     const { rows: couponRows } = await client.query(couponSql, couponParams);
 
     if (couponRows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'No coupons available for your selection. Try a different category.' });
+      return res.status(404).json({ error: 'No coupons available for your selection. Try more points or a different category.' });
     }
 
     const coupon = couponRows[0];
 
-    // Deduct exactly 500 points
+    // Deduct the points user chose to spend
     await client.query(
       'UPDATE reward_points SET available_points = available_points - $1 WHERE card_id = $2',
-      [TOTAL_CHARGE, card_id]
+      [totalCharge, card_id]
     );
 
     // Bump demand score
@@ -173,27 +170,26 @@ const generateCoupon = async (req, res) => {
       [coupon.id]
     );
 
-    const couponToken = crypto.randomBytes(32).toString('hex');
+    const couponToken = require('crypto').randomBytes(32).toString('hex');
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
+
+    const filterCase = subcategory_slug ? 'subcategory' : category_slug ? 'category' : 'none';
 
     const { rows: userCouponRows } = await client.query(
       `INSERT INTO user_coupons
          (user_id, coupon_id, card_id, points_spent, coupon_token, acquired_via, expires_at,
           breakdown_coupon, breakdown_category, breakdown_brand, filter_case)
-       VALUES ($1,$2,$3,$4,$5,'generated',$6,$7,$8,$9,$10)
+       VALUES ($1,$2,$3,$4,$5,'generated',$6,$7,0,0,$8)
        RETURNING *`,
-      [
-        req.user.id, coupon.id, card_id, TOTAL_CHARGE, couponToken, expiresAt,
-        breakdown.couponCharge, breakdown.categoryCharge, breakdown.brandCharge, filterCase
-      ]
+      [req.user.id, coupon.id, card_id, totalCharge, couponToken, expiresAt, coupon.points_required, filterCase]
     );
 
     await client.query(
       `INSERT INTO reward_history (user_id, card_id, user_coupon_id, transaction_type, points, description)
        VALUES ($1,$2,$3,'spent',$4,$5)`,
-      [req.user.id, card_id, userCouponRows[0].id, -TOTAL_CHARGE,
-       `Generated ${coupon.brand_name} coupon (${filterCase} filter)`]
+      [req.user.id, card_id, userCouponRows[0].id, -totalCharge,
+       `Generated ${coupon.brand_name} coupon (${totalCharge} pts)`]
     );
 
     await client.query('COMMIT');
@@ -201,15 +197,8 @@ const generateCoupon = async (req, res) => {
     res.status(201).json({
       user_coupon: userCouponRows[0],
       coupon: { ...coupon, redemption_url: undefined },
-      points_charged: TOTAL_CHARGE,
-      breakdown: {
-        coupon_value:      breakdown.couponCharge,
-        category_premium:  breakdown.categoryCharge,
-        brand_premium:     breakdown.brandCharge,
-        total:             TOTAL_CHARGE,
-        filter_case:       filterCase,
-        coupon_tier:       couponTier,
-      },
+      points_charged: totalCharge,
+      coupon_worth: coupon.points_required,
     });
   } catch (err) {
     await client.query('ROLLBACK');

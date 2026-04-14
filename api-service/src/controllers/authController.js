@@ -12,7 +12,7 @@ const generateToken = (userId) => {
 // POST /api/auth/register
 const register = async (req, res) => {
   try {
-    const { name, email, password, age } = req.body;
+    const { name, email, password, age, phone, gender, city, referred_by } = req.body;
 
     const existing = await query('SELECT id FROM users WHERE email = $1', [email]);
     if (existing.rows.length > 0) {
@@ -21,11 +21,15 @@ const register = async (req, res) => {
 
     const password_hash = await bcrypt.hash(password, 12);
 
+    // Generate a simple referral code for this user
+    const referral_code = name.replace(/\s+/g, '').toUpperCase().slice(0, 4)
+      + Math.floor(1000 + Math.random() * 9000);
+
     const { rows } = await query(
-      `INSERT INTO users (name, email, password_hash, age, auth_provider)
-       VALUES ($1, $2, $3, $4, 'local')
+      `INSERT INTO users (name, email, password_hash, age, phone, gender, city, referral_code, referred_by, auth_provider)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'local')
        RETURNING id, name, email, age, avatar_url, created_at`,
-      [name, email, password_hash, age || null]
+      [name, email, password_hash, age || null, phone || null, gender || null, city || null, referral_code, referred_by || null]
     );
 
     const user = rows[0];
