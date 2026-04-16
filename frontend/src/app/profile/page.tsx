@@ -4,8 +4,10 @@ import AppLayout from '@/components/layout/AppLayout';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
-import { CreditCard, TrendingDown, TrendingUp, RefreshCw, Edit2, Check, X } from 'lucide-react';
+import { TrendingDown, TrendingUp, Edit2, Check, X } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
+import BrandedCard from '@/components/ui/BrandedCard';
+import BrandedCouponMini from '@/components/ui/BrandedCouponMini';
 
 const T = (v: string) => ({ color: `var(--${v})` });
 
@@ -119,29 +121,24 @@ export default function ProfilePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Linked Cards */}
+          {/* Linked Cards — full themed cards like My Cards page */}
           <div>
-            <h2 className="font-semibold mb-3 flex items-center gap-2" style={T('text-secondary')}>
-              <CreditCard className="w-4 h-4 text-brand-500" /> Linked Cards
-            </h2>
+            <h2 className="font-semibold mb-4" style={T('text-secondary')}>Linked Cards</h2>
             {profile?.cards?.length === 0 ? (
               <div className="card p-6 text-center text-sm" style={T('text-muted')}>No cards linked</div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-4">
                 {profile?.cards?.map((c: any) => (
-                  <div key={c.id} className="card p-3 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-600 to-purple-700 flex items-center justify-center flex-shrink-0">
-                      <CreditCard className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium" style={T('text-primary')}>{c.card_name}</div>
-                      <div className="text-xs" style={T('text-muted')}>{c.bank_name} •••• {c.last_four_digits}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-bold text-brand-500">{c.available_points?.toLocaleString()}</div>
-                      <div className="text-xs" style={T('text-hint')}>pts</div>
-                    </div>
-                  </div>
+                  <BrandedCard
+                    key={c.id}
+                    card_name={c.card_name}
+                    bank_name={c.bank_name}
+                    last_four_digits={c.last_four_digits}
+                    network={c.network}
+                    available_points={c.available_points}
+                    expiring_points={c.expiring_points}
+                    expiry_date={c.expiry_date}
+                  />
                 ))}
               </div>
             )}
@@ -173,33 +170,26 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Coupon History */}
-        <div>
-          <h2 className="font-semibold mb-3 flex items-center gap-2" style={T('text-secondary')}>
-            Coupon History
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {profile?.coupons?.slice(0,6).map((c: any) => (
-              <div key={c.id} className="card p-3 flex items-center gap-3" style={{ opacity: c.status !== 'active' ? 0.55 : 1 }}>
-                <span className="text-xl">{c.icon || '🎫'}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium" style={T('text-primary')}>{c.brand_name}</div>
-                  <div className="text-xs truncate" style={T('text-muted')}>{c.title}</div>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <div className="text-xs px-2 py-0.5 rounded-full border capitalize"
-                    style={c.status === 'active'
-                      ? { background:'rgba(16,185,129,0.10)', color:'#059669', borderColor:'rgba(16,185,129,0.25)' }
-                      : c.status === 'redeemed'
-                      ? { background:'var(--bg-elevated)', color:'var(--text-muted)', borderColor:'var(--border-subtle)' }
-                      : { background:'rgba(239,68,68,0.08)', color:'#dc2626', borderColor:'rgba(239,68,68,0.20)' }
-                    }>{c.status}</div>
-                  <div className="text-xs mt-0.5" style={T('text-hint')}>{c.points_spent} pts</div>
-                </div>
-              </div>
-            ))}
+        {/* Coupon History — full branded coupons */}
+        {profile?.coupons?.length > 0 && (
+          <div>
+            <h2 className="font-semibold mb-4" style={T('text-secondary')}>Coupon History</h2>
+            <div className="space-y-2.5">
+              {profile?.coupons?.slice(0,10).map((c: any) => (
+                <BrandedCouponMini
+                  key={c.id}
+                  brand_name={c.brand_name}
+                  brand_logo_url={c.brand_logo_url || c.logo_url}
+                  title={c.title}
+                  discount_label={c.discount_label}
+                  points_spent={c.points_spent}
+                  status={c.status}
+                  size="md"
+                />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </AppLayout>
   );

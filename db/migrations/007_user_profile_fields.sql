@@ -1,0 +1,6 @@
+-- Add extra profile fields collected during registration
+ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(20);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(20);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS city VARCHAR(100);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code VARCHAR(20);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by VARCHAR(20);

@@ -4,15 +4,11 @@ import AppLayout from '@/components/layout/AppLayout';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
-import { formatDistanceToNow, format } from 'date-fns';
-import { TrendingUp, AlertTriangle, CreditCard, Ticket, Zap, ArrowRight, Clock } from 'lucide-react';
+import { format } from 'date-fns';
+import { TrendingUp, AlertTriangle, Ticket, Zap, ArrowRight, Clock, CreditCard } from 'lucide-react';
 import Link from 'next/link';
-
-const tierBadge = (tier: string) => {
-  if (tier === 'premium') return <span className="badge-premium">Premium</span>;
-  if (tier === 'standard') return <span className="badge-standard">Standard</span>;
-  return <span className="badge-budget">Budget</span>;
-};
+import BrandedCard from '@/components/ui/BrandedCard';
+import BrandedCouponMini from '@/components/ui/BrandedCouponMini';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
@@ -33,6 +29,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => <div key={i} className="h-28 skeleton rounded-2xl" />)}
         </div>
+        <div className="h-48 skeleton rounded-2xl" />
       </div>
     </AppLayout>
   );
@@ -43,6 +40,7 @@ export default function DashboardPage() {
   return (
     <AppLayout>
       <div className="max-w-6xl">
+        {/* Greeting */}
         <div className="mb-8">
           <h1 className="font-display text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
             {greeting}, {user?.name?.split(' ')[0]} 👋
@@ -50,7 +48,7 @@ export default function DashboardPage() {
           <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Here's your rewards summary</p>
         </div>
 
-        {/* Stats */}
+        {/* Stat chips */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="stat-card glow-brand">
             <TrendingUp className="w-5 h-5 text-brand-400 mb-1" />
@@ -74,110 +72,99 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Card summary */}
-          <div className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Your Cards</h2>
-              <Link href="/cards" className="text-xs text-brand-400 hover:text-brand-300 flex items-center gap-1">
-                Manage <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
+        {/* ── YOUR CARDS — full BrandedCard, horizontal scroll on small screens ── */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-base" style={{ color: 'var(--text-secondary)' }}>Your Cards</h2>
+            <Link href="/cards" className="text-xs text-brand-400 hover:text-brand-300 flex items-center gap-1">
+              Manage <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
 
-            {data?.card_summary?.length === 0 ? (
-              <div className="card p-8 text-center">
-                <CreditCard className="w-10 h-10 mx-auto mb-3" style={{ color: 'var(--text-hint)' }} />
-                <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>No cards linked yet</p>
-                <Link href="/cards" className="btn-primary text-sm px-5 py-2">Add a Card</Link>
+          {!data?.card_summary?.length ? (
+            <div className="card p-8 text-center">
+              <CreditCard className="w-10 h-10 mx-auto mb-3" style={{ color: 'var(--text-hint)' }} />
+              <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>No cards linked yet</p>
+              <Link href="/cards" className="btn-primary text-sm px-5 py-2">Add a Card</Link>
+            </div>
+          ) : (
+            /* Horizontal scroll row of full cards — same as My Cards page */
+            <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 8 }}>
+              {data.card_summary.map((card: any) => (
+                <div key={card.id} style={{ minWidth: 300, maxWidth: 340, flex: '0 0 auto' }}>
+                  <BrandedCard
+                    card_name={card.card_name}
+                    bank_name={card.bank_name}
+                    last_four_digits={card.last_four_digits}
+                    network={card.network}
+                    available_points={card.available_points}
+                    expiring_points={card.expiring_points}
+                    expiry_date={card.expiry_date}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── BOTTOM ROW: expiring alerts + recent coupons ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          {/* Expiring points alert */}
+          {(data?.expiring_points?.length ?? 0) > 0 && (
+            <div className="lg:col-span-1">
+              <h2 className="font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
+                <AlertTriangle className="w-4 h-4 text-amber-400" /> Points Expiring
+              </h2>
+              <div className="space-y-2">
+                {data.expiring_points.map((ep: any, i: number) => (
+                  <div key={i} className="card p-3" style={{ borderColor: 'rgba(245,158,11,0.25)', background: 'rgba(245,158,11,0.04)' }}>
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{ep.card_name} •••• {ep.last_four_digits}</div>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-sm font-bold text-amber-400">{ep.expiring_points} pts</span>
+                      <span className="text-xs flex items-center gap-1" style={{ color: 'var(--text-hint)' }}>
+                        <Clock className="w-3 h-3" />
+                        {format(new Date(ep.expiry_date), 'MMM d')}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Link href="/marketplace" className="btn-gold w-full mt-3 text-sm py-2">Redeem Before Expiry</Link>
+            </div>
+          )}
+
+          {/* Recent coupons — full BrandedCouponMini, size='md' */}
+          <div className={`${(data?.expiring_points?.length ?? 0) > 0 ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold text-base" style={{ color: 'var(--text-secondary)' }}>Recent Coupons</h2>
+              <Link href="/coupons" className="text-xs text-brand-400 hover:text-brand-300">View all</Link>
+            </div>
+            {!data?.recent_coupons?.length ? (
+              <div className="card p-5 text-center">
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No coupons yet</p>
+                <Link href="/marketplace" className="text-xs text-brand-400 mt-2 block">Browse marketplace →</Link>
               </div>
             ) : (
-              <div className="space-y-3">
-                {data?.card_summary?.map((card: any) => (
-                  <div key={card.id} className="card p-4 flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-600 to-purple-700 flex items-center justify-center flex-shrink-0">
-                      <CreditCard className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{card.card_name}</span>
-                        <span className="text-xs font-mono" style={{ color: 'var(--text-hint)' }}>•••• {card.last_four_digits}</span>
-                      </div>
-                      <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{card.bank_name}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-bold text-brand-400">{card.available_points?.toLocaleString()}</div>
-                      <div className="text-xs" style={{ color: 'var(--text-hint)' }}>points</div>
-                    </div>
-                    {card.expiring_points > 0 && (
-                      <div className="text-right">
-                        <div className="text-xs font-medium text-amber-400">{card.expiring_points} expiring</div>
-                        <div className="text-xs" style={{ color: 'var(--text-hint)' }}>
-                          {card.expiry_date ? format(new Date(card.expiry_date), 'MMM d') : ''}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+              <div className="space-y-2.5">
+                {data.recent_coupons.map((c: any) => (
+                  <BrandedCouponMini
+                    key={c.id}
+                    brand_name={c.brand_name}
+                    brand_logo_url={c.brand_logo_url || c.logo_url}
+                    title={c.title}
+                    discount_label={c.discount_label}
+                    points_spent={c.points_spent}
+                    status={c.status}
+                    size="md"
+                  />
                 ))}
               </div>
             )}
           </div>
-
-          {/* Right column */}
-          <div className="space-y-6">
-            {(data?.expiring_points?.length ?? 0) > 0 && (
-              <div>
-                <h2 className="font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
-                  <AlertTriangle className="w-4 h-4 text-amber-400" /> Points Expiring
-                </h2>
-                <div className="space-y-2">
-                  {data?.expiring_points?.map((ep: any, i: number) => (
-                    <div key={i} className="card p-3" style={{ borderColor: 'rgba(245,158,11,0.25)', background: 'rgba(245,158,11,0.04)' }}>
-                      <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{ep.card_name} •••• {ep.last_four_digits}</div>
-                      <div className="flex items-center justify-between mt-1">
-                        <span className="text-sm font-bold text-amber-400">{ep.expiring_points} pts</span>
-                        <span className="text-xs flex items-center gap-1" style={{ color: 'var(--text-hint)' }}>
-                          <Clock className="w-3 h-3" />
-                          {format(new Date(ep.expiry_date), 'MMM d')}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <Link href="/marketplace" className="btn-gold w-full mt-3 text-sm py-2">Redeem Before Expiry</Link>
-              </div>
-            )}
-
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Recent Coupons</h2>
-                <Link href="/coupons" className="text-xs text-brand-400 hover:text-brand-300">View all</Link>
-              </div>
-              {data?.recent_coupons?.length === 0 ? (
-                <div className="card p-5 text-center">
-                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No coupons yet</p>
-                  <Link href="/marketplace" className="text-xs text-brand-400 mt-2 block">Browse marketplace →</Link>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {data?.recent_coupons?.map((c: any) => (
-                    <div key={c.id} className="card p-3 flex items-center gap-3">
-                      <span className="text-lg">{c.icon || '🎫'}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{c.brand_name}</div>
-                        <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                          {c.points_spent} pts · {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
-                        </div>
-                      </div>
-                      {tierBadge(c.tier)}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
         </div>
 
-        {/* Quick action banner */}
+        {/* Quick action */}
         <div className="mt-8 card p-6 flex items-center justify-between flex-wrap gap-4"
           style={{ background: 'rgba(192,68,240,0.06)', borderColor: 'rgba(192,68,240,0.18)' }}>
           <div>
