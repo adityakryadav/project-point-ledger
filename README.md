@@ -1,6 +1,6 @@
 # Point Ledger
 
-A full-stack Credit Card Rewards Coupon Marketplace — aggregate reward points from all your cards and redeem them for curated coupons.
+A full-stack Credit Card Rewards Coupon Marketplace - aggregate reward points from all your cards and redeem them for curated coupons.
 
 ---
 
