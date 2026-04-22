@@ -22,7 +22,11 @@ app.use(cors({
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100, message: { error: 'Too many requests.' } });
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: { error: 'Too many auth attempts.' } });
 
-app.use('/api/', limiter);
+// Apply general limiter to all API routes EXCEPT OAuth callback (which is externally triggered)
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/auth/google')) return next(); // skip rate limit for OAuth flow
+  return limiter(req, res, next);
+});
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 
