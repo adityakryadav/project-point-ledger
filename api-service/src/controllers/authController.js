@@ -21,20 +21,19 @@ const register = async (req, res) => {
 
     const password_hash = await bcrypt.hash(password, 12);
 
-    // Generate a simple referral code for this user
-    const referral_code = name.replace(/\s+/g, '').toUpperCase().slice(0, 4)
-      + Math.floor(1000 + Math.random() * 9000);
+    // Generate consistent 8-char referral code: 4-letter prefix (padded) + 4 digits
+    const namePrefix = name.replace(/\s+/g, '').toUpperCase().padEnd(4, 'X').slice(0, 4);
+    const referral_code = namePrefix + Math.floor(1000 + Math.random() * 9000);
 
     const { rows } = await query(
       `INSERT INTO users (name, email, password_hash, age, phone, gender, city, referral_code, referred_by, auth_provider)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'local')
-       RETURNING id, name, email, age, avatar_url, created_at`,
+       RETURNING id, name, email, age, avatar_url, created_at, referral_code`,
       [name, email, password_hash, age || null, phone || null, gender || null, city || null, referral_code, referred_by || null]
     );
 
-    const user = rows[0];
+    const user = rows[0]; // now includes referral_code
     const token = generateToken(user.id);
-
     res.status(201).json({ token, user });
   } catch (err) {
     console.error('Register error:', err);
