@@ -30,3 +30,6 @@ jobs:
       - name: Build Frontend
         run: npm run build
         working-directory: frontend
+
+      - name: CI Complete
+        run: echo "✅ Point Ledger CI passed successfully"
